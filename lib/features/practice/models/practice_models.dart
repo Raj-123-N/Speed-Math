@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/quiz_category.dart';
 
-/// Shared settings for every Practice session.
+/// Shared settings for a repeatable Practice drill.
 enum PracticeInputMode { keyboard, mcq }
 enum PracticeTimeMode { limit, stopwatch }
 enum PracticeComplexity { easy, medium, hard }
@@ -35,6 +35,8 @@ class PracticeConfig {
     this.multiplierMax = 10,
     this.tableOrder = TableOrder.random,
     this.shuffleSequential = false,
+    this.valueStart = 1,
+    this.valueEnd = 100,
   });
 
   final QuizCategory category;
@@ -54,6 +56,8 @@ class PracticeConfig {
   final int multiplierMax;
   final TableOrder tableOrder;
   final bool shuffleSequential;
+  final int valueStart;
+  final int valueEnd;
 }
 
 class PracticeQuestion {
