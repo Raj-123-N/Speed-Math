@@ -6,6 +6,7 @@ class PracticeQuestionEngine {
   final Random _random;
   final Set<String> _recent = <String>{};
   final Map<String, int> _tableCursor = <String, int>{};
+  final Map<String, List<int>> _tableOrders = <String, List<int>>{};
 
   PracticeQuestion next(PracticeConfig config) {
     PracticeQuestion question;
@@ -61,10 +62,13 @@ class PracticeQuestionEngine {
     int table;
     if (c.tableOrder == TableOrder.sequential) {
       final range = c.tableEnd - c.tableStart + 1;
+      final order = _tableOrders.putIfAbsent(key, () {
+        final list = List<int>.generate(range, (i) => c.tableStart + i);
+        if (c.shuffleSequential) list.shuffle(_random);
+        return list;
+      });
       final cursor = _tableCursor[key] ?? 0;
-      final order = List<int>.generate(range, (i) => c.tableStart + i);
-      if (c.shuffleSequential) order.shuffle(_random);
-      table = order[cursor % range];
+      table = order[cursor % order.length];
       _tableCursor[key] = cursor + 1;
     } else {
       table = c.tableStart + _random.nextInt(c.tableEnd - c.tableStart + 1);
