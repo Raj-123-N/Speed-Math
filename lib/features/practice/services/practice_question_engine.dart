@@ -44,21 +44,20 @@ class PracticeQuestionEngine {
 
   int _maxForDigits(int digits) => pow(10, digits).toInt() - 1;
 
-  int _number(int digits, {bool allowZero = false}) {
+  int _number(int digits) {
     final safeDigits = digits.clamp(1, 5);
-    final min = allowZero ? 0 : (safeDigits == 1 ? 1 : pow(10, safeDigits - 1).toInt());
-    final max = _maxForDigits(safeDigits);
-    return min + _random.nextInt(max - min + 1);
+    final minValue = safeDigits == 1 ? 1 : pow(10, safeDigits - 1).toInt();
+    final maxValue = _maxForDigits(safeDigits);
+    return minValue + _random.nextInt(maxValue - minValue + 1);
   }
 
-  int _between(int min, int max) => min + _random.nextInt(max - min + 1);
+  int _between(int minValue, int maxValue) => minValue + _random.nextInt(maxValue - minValue + 1);
 
   PracticeQuestion _arithmetic(PracticeConfig c) {
     final count = c.terms.clamp(2, 6);
     final left = _number(c.lhsDigits);
     final values = <int>[left];
     for (var i = 1; i < count; i++) values.add(_number(c.rhsDigits));
-
     if (c.category.operation == MathOperation.subtraction) {
       final maxRhs = max(1, left ~/ max(1, count - 1));
       for (var i = 1; i < values.length; i++) values[i] = min(values[i], maxRhs);
@@ -222,8 +221,8 @@ class PracticeQuestionEngine {
 
   PracticeQuestion _trigonometry(PracticeConfig c) {
     final pool = c.complexity == PracticeComplexity.easy
-        ? const <String, int>{'sin 0°':0,'sin 30°':1,'sin 90°':1,'cos 0°':1,'cos 60°':0,'tan 0°':0}
-        : const <String, int>{'sin 30° × 2':1,'cos 60° × 2':1,'sin 90°':1,'cos 0°':1,'tan 45°':1};
+        ? const <String, num>{'sin 0°':0,'sin 30°':0.5,'sin 90°':1,'cos 0°':1,'cos 60°':0.5,'tan 0°':0}
+        : const <String, num>{'sin 30° × 2':1,'cos 60° × 2':1,'sin 90°':1,'cos 0°':1,'tan 45°':1};
     final prompt = pool.keys.elementAt(_random.nextInt(pool.length));
     return _numeric('$prompt = ?', pool[prompt]!);
   }
