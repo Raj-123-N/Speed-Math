@@ -61,11 +61,7 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
     final accent = practiceSectionColor(widget.category);
     return Scaffold(
       backgroundColor: dark ? AppColors.backgroundDark : const Color(0xFFF3F5F9),
-      appBar: AppBar(
-        backgroundColor: dark ? AppColors.surfaceDark : Colors.white,
-        surfaceTintColor: Colors.transparent,
-        title: Text('Practice ${widget.category.name}', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800)),
-      ),
+      appBar: AppBar(backgroundColor: dark ? AppColors.surfaceDark : Colors.white, surfaceTintColor: Colors.transparent, title: Text('Practice ${widget.category.name}', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
         children: [
@@ -86,19 +82,11 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
 
   Widget _heroCard(Color accent, bool dark) => Container(
     padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(colors: [accent.withValues(alpha: .18), accent.withValues(alpha: .05)]),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: accent.withValues(alpha: .3)),
-    ),
+    decoration: BoxDecoration(gradient: LinearGradient(colors: [accent.withValues(alpha: .18), accent.withValues(alpha: .05)]), borderRadius: BorderRadius.circular(20), border: Border.all(color: accent.withValues(alpha: .3))),
     child: Row(children: [
       Container(width: 52, height: 52, padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: accent.withValues(alpha: .14), borderRadius: BorderRadius.circular(15)), child: Image.asset(widget.category.iconAsset, errorBuilder: (_, _, _) => Icon(Icons.calculate_rounded, color: accent))),
       const SizedBox(width: 14),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(widget.category.name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: dark ? Colors.white : const Color(0xFF172033))),
-        const SizedBox(height: 4),
-        Text('Practice this learned topic as many times as you want. Each session generates fresh drills.', style: TextStyle(color: dark ? Colors.white70 : Colors.black54)),
-      ])),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(widget.category.name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: dark ? Colors.white : const Color(0xFF172033))), const SizedBox(height: 4), Text('Practice this learned topic as many times as you want. Each session generates fresh drills.', style: TextStyle(color: dark ? Colors.white70 : Colors.black54))])),
     ]),
   );
 
@@ -109,14 +97,14 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
   ]);
 
   Widget _tableSettings(bool dark, Color accent) => _section(dark, accent, 'Table drill', [
-    _rangeRow('Tables', _tableStart, _tableEnd, '1–100 tables', (a, b) => setState(() { _tableStart = a; _tableEnd = b; })),
+    _rangeRow('Tables', _tableStart, _tableEnd, '1–100 tables', 100, (a, b) => setState(() { _tableStart = a; _tableEnd = b; })),
     _choiceRow('Multipliers', ['10', '20'], _multiplier == 10 ? '10' : '20', (v) => setState(() => _multiplier = int.parse(v))),
     _choiceRow('Order', ['Sequential', 'Random'], _tableOrder == TableOrder.sequential ? 'Sequential' : 'Random', (v) => setState(() => _tableOrder = v == 'Sequential' ? TableOrder.sequential : TableOrder.random)),
     if (_tableOrder == TableOrder.sequential) _switchRow('Shuffle sequence', _shuffleSequential, (v) => setState(() => _shuffleSequential = v)),
   ]);
 
   Widget _recallSettings(bool dark, Color accent) => _section(dark, accent, 'Recall range', [
-    _rangeRow('Values', _valueStart, _valueEnd, '1–1000 values', (a, b) => setState(() { _valueStart = a; _valueEnd = b; })),
+    _rangeRow('Values', _valueStart, _valueEnd, '1–1000 values', 1000, (a, b) => setState(() { _valueStart = a; _valueEnd = b; })),
   ]);
 
   Widget _complexitySettings(bool dark, Color accent) => _section(dark, accent, 'Difficulty', [
@@ -139,61 +127,26 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontWeight: FontWeight.w900, color: accent, letterSpacing: .3)), const SizedBox(height: 4), ...children]),
   );
 
-  Widget _stepper(String label, int value, int min, int max, ValueChanged<int> onChanged) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-      IconButton(onPressed: value > min ? () => onChanged(value - 1) : null, icon: const Icon(Icons.remove_circle_outline_rounded)),
-      SizedBox(width: 34, child: Center(child: Text('$value', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)))),
-      IconButton(onPressed: value < max ? () => onChanged(value + 1) : null, icon: const Icon(Icons.add_circle_outline_rounded)),
-    ]),
-  );
+  Widget _stepper(String label, int value, int min, int max, ValueChanged<int> onChanged) => ListTile(contentPadding: EdgeInsets.zero, title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(onPressed: value > min ? () => onChanged(value - 1) : null, icon: const Icon(Icons.remove_circle_outline_rounded)), SizedBox(width: 34, child: Center(child: Text('$value', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)))), IconButton(onPressed: value < max ? () => onChanged(value + 1) : null, icon: const Icon(Icons.add_circle_outline_rounded))]));
 
-  Widget _rangeRow(String label, int a, int b, String subtitle, void Function(int, int) onChanged) => ListTile(
+  Widget _rangeRow(String label, int a, int b, String subtitle, int maxValue, void Function(int, int) onChanged) => ListTile(
     contentPadding: EdgeInsets.zero,
     title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
     subtitle: Text(subtitle),
     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-      _smallField(a, (v) => onChanged(v.clamp(1, b), b)),
+      _smallField(a, (v) => onChanged(v.clamp(1, b).toInt(), b)),
       const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text('to')),
-      _smallField(b, (v) => onChanged(a, v.clamp(a, subtitle.startsWith('1–1000') ? 1000 : 100))),
+      _smallField(b, (v) => onChanged(a, v.clamp(a, maxValue).toInt())),
     ]),
   );
 
-  Widget _smallField(int value, ValueChanged<int> onChanged) => SizedBox(
-    width: 58,
-    child: TextFormField(initialValue: '$value', textAlign: TextAlign.center, keyboardType: TextInputType.number, decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()), onFieldSubmitted: (v) { final n = int.tryParse(v); if (n != null) onChanged(n); }),
-  );
+  Widget _smallField(int value, ValueChanged<int> onChanged) => SizedBox(width: 58, child: TextFormField(initialValue: '$value', textAlign: TextAlign.center, keyboardType: TextInputType.number, decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()), onFieldSubmitted: (v) { final n = int.tryParse(v); if (n != null) onChanged(n); }));
 
-  Widget _choiceRow(String label, List<String> values, String selected, ValueChanged<String> onChanged) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Row(children: [Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700))), Wrap(spacing: 6, children: values.map((v) => ChoiceChip(label: Text(v), selected: v == selected, onSelected: (_) => onChanged(v))).toList())]),
-  );
-
+  Widget _choiceRow(String label, List<String> values, String selected, ValueChanged<String> onChanged) => Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Row(children: [Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700))), Wrap(spacing: 6, children: values.map((v) => ChoiceChip(label: Text(v), selected: v == selected, onSelected: (_) => onChanged(v))).toList())]));
   Widget _switchRow(String label, bool value, ValueChanged<bool> onChanged) => SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)), value: value, onChanged: onChanged);
 
   void _start() {
-    final config = PracticeConfig(
-      category: widget.category,
-      pattern: _pattern,
-      lhsDigits: _lhs,
-      rhsDigits: _rhs,
-      terms: _terms,
-      questions: _questions,
-      complexity: _complexity,
-      timeMode: _timeMode,
-      timeLimitSeconds: _seconds,
-      inputMode: _input,
-      autoSubmit: _autoSubmit,
-      quickSubmit: _quickSubmit,
-      tableStart: _tableStart,
-      tableEnd: _tableEnd,
-      multiplierMax: _multiplier,
-      tableOrder: _tableOrder,
-      shuffleSequential: _shuffleSequential,
-      valueStart: _valueStart,
-      valueEnd: _valueEnd,
-    );
+    final config = PracticeConfig(category: widget.category, pattern: _pattern, lhsDigits: _lhs, rhsDigits: _rhs, terms: _terms, questions: _questions, complexity: _complexity, timeMode: _timeMode, timeLimitSeconds: _seconds, inputMode: _input, autoSubmit: _autoSubmit, quickSubmit: _quickSubmit, tableStart: _tableStart, tableEnd: _tableEnd, multiplierMax: _multiplier, tableOrder: _tableOrder, shuffleSequential: _shuffleSequential, valueStart: _valueStart, valueEnd: _valueEnd);
     Navigator.push(context, MaterialPageRoute(builder: (_) => PracticeSessionScreen(config: config)));
   }
 }
