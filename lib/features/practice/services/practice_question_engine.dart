@@ -3,19 +3,26 @@ import 'dart:math';
 import '../../../core/models/quiz_category.dart';
 import '../models/practice_models.dart';
 
+/// Generates repeatable, topic-specific practice questions.
+///
+/// Practice is deliberately separate from Quiz/Challenge: every generator can
+/// be run repeatedly with configurable difficulty and input mode.
 class PracticeQuestionEngine {
   PracticeQuestionEngine({Random? random}) : _random = random ?? Random();
+
   final Random _random;
   final List<String> _recent = [];
   final Map<String, int> _tableCursor = {};
 
-  PracticeQuestion next(PracticeConfig c) {
-    var q = _generate(c);
+  PracticeQuestion next(PracticeConfig config) {
+    var question = _generate(config);
     var guard = 0;
-    while (_recent.contains(q.prompt) && guard++ < 30) q = _generate(c);
-    _recent.add(q.prompt);
-    if (_recent.length > 40) _recent.removeAt(0);
-    return q;
+    while (_recent.contains(question.prompt) && guard++ < 40) {
+      question = _generate(config);
+    }
+    _recent.add(question.prompt);
+    if (_recent.length > 50) _recent.removeAt(0);
+    return question;
   }
 
   PracticeQuestion _generate(PracticeConfig c) {
@@ -31,49 +38,102 @@ class PracticeQuestionEngine {
       case PracticePattern.recall:
         return _recall(c);
       case PracticePattern.generic:
-        return _generic(c);
+        return _topic(c);
     }
   }
 
-  int _scale(PracticeComplexity complexity) {
-    switch (complexity) {
-      case PracticeComplexity.easy:
-        return 1;
-      case PracticeComplexity.medium:
-        return 2;
-      case PracticeComplexity.hard:
-        return 4;
+  PracticeQuestion _topic(PracticeConfig c) {
+    switch (c.category.operation) {
+      case MathOperation.numberSystem: return _numberSystem(c);
+      case MathOperation.placeValue: return _placeValue(c);
+      case MathOperation.factorsMultiples: return _factors(c);
+      case MathOperation.divisibility: return _divisibility(c);
+      case MathOperation.remainders: return _remainders(c);
+      case MathOperation.averages: return _averages(c);
+      case MathOperation.ratioProportion: return _ratio(c);
+      case MathOperation.profitLossDiscount: return _profitLoss(c);
+      case MathOperation.simpleCompoundInterest: return _interest(c);
+      case MathOperation.mixtureAlligation: return _mixture(c);
+      case MathOperation.partnership: return _partnership(c);
+      case MathOperation.ages: return _ages(c);
+      case MathOperation.timeWork: return _timeWork(c);
+      case MathOperation.pipesCisterns: return _pipes(c);
+      case MathOperation.speedDistance: return _speedDistance(c);
+      case MathOperation.trains: return _trains(c);
+      case MathOperation.boatsStreams: return _boats(c);
+      case MathOperation.series: return _series(c);
+      case MathOperation.arithmeticProgression: return _ap(c);
+      case MathOperation.geometricProgression: return _gp(c);
+      case MathOperation.sequencesPatterns: return _patterns(c);
+      case MathOperation.polynomials: return _polynomials(c);
+      case MathOperation.geometryBasics: return _geometry(c);
+      case MathOperation.mensuration2d: return _mensuration2d(c);
+      case MathOperation.mensuration3d: return _mensuration3d(c);
+      case MathOperation.pythagorean: return _pythagorean(c);
+      case MathOperation.trigonometry: return _trigonometry(c);
+      case MathOperation.permutationCombination: return _pnC(c);
+      case MathOperation.probability: return _probability(c);
+      case MathOperation.dataInterpretation: return _dataInterpretation(c);
+      case MathOperation.statistics: return _statistics(c);
+      case MathOperation.mentalMultiplication: return _mentalMultiplication(c);
+      case MathOperation.fastDivision: return _fastDivision(c);
+      case MathOperation.bodmas: return _bodmas(c);
+      case MathOperation.simplification: return _simplification(c);
+      case MathOperation.linearEquation: return _linear(c);
+      case MathOperation.quadraticEquation: return _quadratic(c);
+      case MathOperation.cubicEquation: return _cubic(c);
+      case MathOperation.unitDigit: return _unitDigit(c);
+      case MathOperation.powers:
+      case MathOperation.exponents: return _powers(c);
+      case MathOperation.algebra: return _equationMix(c);
+      case MathOperation.percentage: return _percentage(c);
+      case MathOperation.fraction: return _fraction(c.complexity);
+      case MathOperation.square: return _square(c);
+      case MathOperation.cube: return _cube(c);
+      case MathOperation.squareRoot: return _squareRoot(c);
+      case MathOperation.cubeRoot: return _cubeRoot(c);
+      case MathOperation.addition: return _arithmetic(c);
+      case MathOperation.subtraction: return _arithmetic(c);
+      case MathOperation.multiplication: return _multiplication(c);
+      case MathOperation.division: return _division(c);
+      case MathOperation.table: return _tables(c);
+      case MathOperation.diAddition: return _dataInterpretation(c);
+      case MathOperation.quickRecallWorkout: return _quickRecallWorkout(c);
+      case MathOperation.basicsWorkout: return _basicsWorkout(c);
+      case MathOperation.mixAdvance: return _advancedMix(c);
+      case MathOperation.miscellaneousMix: return _miscellaneousMix(c);
     }
   }
 
-  int _maxForDigits(int digits) => pow(10, digits).toInt() - 1;
-
-  int _number(int digits) {
-    final safeDigits = digits.clamp(1, 5);
-    final minValue = safeDigits == 1 ? 1 : pow(10, safeDigits - 1).toInt();
-    final maxValue = _maxForDigits(safeDigits);
-    return minValue + _random.nextInt(maxValue - minValue + 1);
-  }
+  int _scale(PracticeComplexity c) => switch (c) {
+        PracticeComplexity.easy => 1,
+        PracticeComplexity.medium => 2,
+        PracticeComplexity.hard => 4,
+      };
 
   int _between(int minValue, int maxValue) =>
       minValue + _random.nextInt(maxValue - minValue + 1);
 
+  int _number(int digits) {
+    final d = digits.clamp(1, 5);
+    final minValue = d == 1 ? 1 : pow(10, d - 1).toInt();
+    final maxValue = pow(10, d).toInt() - 1;
+    return _between(minValue, maxValue);
+  }
+
   PracticeQuestion _arithmetic(PracticeConfig c) {
-    final count = c.terms.clamp(2, 6);
-    final left = _number(c.lhsDigits);
-    final values = <int>[left];
-    for (var i = 1; i < count; i++) values.add(_number(c.rhsDigits));
+    final n = c.terms.clamp(2, 6);
+    final values = List.generate(n, (i) => _number(i == 0 ? c.lhsDigits : c.rhsDigits));
     if (c.category.operation == MathOperation.subtraction) {
-      final maxRhs = max(1, left ~/ max(1, count - 1));
-      for (var i = 1; i < values.length; i++)
-        values[i] = min(values[i], maxRhs);
-      final answer = values.first - values.skip(1).fold(0, (a, b) => a + b);
-      return _numeric('${values.join(' − ')} = ?', answer);
+      final first = values.first;
+      var remainder = first;
+      for (var i = 1; i < values.length; i++) {
+        values[i] = min(values[i], max(1, remainder ~/ (values.length - i)));
+        remainder -= values[i];
+      }
+      return _numeric('${values.join(' − ')} = ?', remainder);
     }
-    return _numeric(
-      '${values.join(' + ')} = ?',
-      values.fold(0, (a, b) => a + b),
-    );
+    return _numeric('${values.join(' + ')} = ?', values.fold(0, (a, b) => a + b));
   }
 
   PracticeQuestion _multiplication(PracticeConfig c) {
@@ -89,12 +149,11 @@ class PracticeQuestionEngine {
   PracticeQuestion _tables(PracticeConfig c) {
     final start = min(c.tableStart, c.tableEnd).clamp(1, 100);
     final end = max(c.tableStart, c.tableEnd).clamp(1, 100);
-    final key =
-        '${c.category.id}:$start-$end:${c.multiplierMax}:${c.tableOrder}:${c.shuffleSequential}';
-    late int table;
+    final key = '${c.category.id}:$start-$end:${c.multiplierMax}:${c.tableOrder}:${c.shuffleSequential}';
+    int table;
     if (c.tableOrder == TableOrder.sequential) {
       final order = _tableOrders.putIfAbsent(key, () {
-        final list = List<int>.generate(end - start + 1, (i) => start + i);
+        final list = List.generate(end - start + 1, (i) => start + i);
         if (c.shuffleSequential) list.shuffle(_random);
         return list;
       });
@@ -108,335 +167,390 @@ class PracticeQuestionEngine {
     return _numeric('$table × $multiplier = ?', table * multiplier);
   }
 
+  final Map<String, List<int>> _tableOrders = {};
+
   PracticeQuestion _recall(PracticeConfig c) {
-    final start = min(c.valueStart, c.valueEnd).clamp(1, 1000);
-    final end = max(c.valueStart, c.valueEnd).clamp(1, 1000);
-    final n = _between(start, end);
     switch (c.category.operation) {
-      case MathOperation.square:
-        return _numeric('$n² = ?', n * n);
-      case MathOperation.cube:
-        return _numeric('$n³ = ?', n * n * n);
-      case MathOperation.squareRoot:
-        final r = _between(start, end);
-        return _numeric('√${r * r} = ?', r);
-      case MathOperation.cubeRoot:
-        final r = _between(start, min(end, 100));
-        return _numeric('∛${r * r * r} = ?', r);
-      case MathOperation.percentage:
-        return _percentage(c, start, end);
-      case MathOperation.fraction:
-        return _fraction(c.complexity);
-      default:
-        return _generic(c);
+      case MathOperation.square: return _square(c);
+      case MathOperation.cube: return _cube(c);
+      case MathOperation.squareRoot: return _squareRoot(c);
+      case MathOperation.cubeRoot: return _cubeRoot(c);
+      case MathOperation.percentage: return _percentage(c);
+      case MathOperation.fraction: return _fraction(c.complexity);
+      default: return _topic(c);
     }
   }
 
-  PracticeQuestion _percentage(PracticeConfig c, int start, int end) {
-    final pcts = switch (c.complexity) {
-      PracticeComplexity.easy => [5, 10, 20, 25, 50],
-      PracticeComplexity.medium => [5, 10, 12, 15, 20, 25, 30, 50, 75],
-      PracticeComplexity.hard => [7, 12, 15, 18, 22, 25, 35, 40, 62],
-    };
-    final pct = pcts[_random.nextInt(pcts.length)];
-    final step = 100 ~/ _gcd(pct, 100);
-    final baseMin = max(1, ((start + step - 1) ~/ step) * step);
-    final baseMax = max(baseMin, (end ~/ step) * step);
-    final base = _between(baseMin, baseMax);
-    return _numeric('$pct% of $base = ?', base * pct ~/ 100);
+  PracticeQuestion _square(PracticeConfig c) {
+    final n = _between(2, 30 * _scale(c.complexity));
+    return _numeric('$n² = ?', n * n);
   }
 
-  PracticeQuestion _fraction(PracticeComplexity complexity) {
-    final pool = switch (complexity) {
-      PracticeComplexity.easy => <String, String>{
-        '1/2': '0.5',
-        '1/4': '0.25',
-        '3/4': '0.75',
-        '1/5': '0.2',
-        '2/5': '0.4',
-      },
-      PracticeComplexity.medium => <String, String>{
-        '3/8': '0.375',
-        '5/8': '0.625',
-        '7/10': '0.7',
-        '3/5': '0.6',
-        '7/20': '0.35',
-      },
-      PracticeComplexity.hard => <String, String>{
-        '11/20': '0.55',
-        '7/16': '0.4375',
-        '13/20': '0.65',
-        '9/25': '0.36',
-        '17/20': '0.85',
-      },
-    };
-    final key = pool.keys.elementAt(_random.nextInt(pool.length));
-    return PracticeQuestion(
-      prompt: '$key = decimal ?',
-      answer: pool[key]!,
-      options: _decimalOptions(pool[key]!),
-      inputHint: 'Decimal answer',
-    );
+  PracticeQuestion _cube(PracticeConfig c) {
+    final n = _between(2, 12 * _scale(c.complexity));
+    return _numeric('$n³ = ?', n * n * n);
   }
 
-  PracticeQuestion _generic(PracticeConfig c) {
-    switch (c.category.operation) {
-      case MathOperation.bodmas:
-        return _bodmas(c);
-      case MathOperation.simplification:
-        return _simplification(c);
-      case MathOperation.series:
-        return _series(c);
-      case MathOperation.linearEquation:
-        return _linear(c);
-      case MathOperation.quadraticEquation:
-        return _quadratic(c);
-      case MathOperation.cubicEquation:
-        return _cubic(c);
-      case MathOperation.unitDigit:
-        return _unitDigit(c);
-      case MathOperation.powers:
-      case MathOperation.exponents:
-        return _powers(c);
-      case MathOperation.algebra:
-        return _equationMix(c);
-      case MathOperation.trigonometry:
-        return _trigonometry(c);
-      case MathOperation.diAddition:
-        return _diAddition(c);
-      case MathOperation.quickRecallWorkout:
-        return _quickRecallWorkout(c);
-      case MathOperation.basicsWorkout:
-        return _basicsWorkout(c);
-      case MathOperation.mixAdvance:
-        return _complexityMix(c);
-      case MathOperation.miscellaneousMix:
-        return _miscellaneousMix(c);
-      default:
-        final a = _between(1, 20 * _scale(c.complexity)),
-            b = _between(1, 20 * _scale(c.complexity));
-        return _numeric('$a + $b = ?', a + b);
+  PracticeQuestion _squareRoot(PracticeConfig c) {
+    final n = _between(2, 40 * _scale(c.complexity));
+    return _numeric('√${n * n} = ?', n);
+  }
+
+  PracticeQuestion _cubeRoot(PracticeConfig c) {
+    final n = _between(2, 15 * _scale(c.complexity));
+    return _numeric('∛${n * n * n} = ?', n);
+  }
+
+  PracticeQuestion _numberSystem(PracticeConfig c) {
+    final n = _between(-100 * _scale(c.complexity), 100 * _scale(c.complexity));
+    final type = _random.nextInt(4);
+    if (type == 0) return _text('$n is ___', n % 2 == 0 ? 'even' : 'odd');
+    if (type == 1) return _text('$n is ___', n >= 0 ? 'non-negative' : 'negative');
+    if (type == 2) return _text('$n is ___', n == n.abs() ? 'non-negative' : 'negative');
+    return _numeric('|$n| = ?', n.abs());
+  }
+
+  PracticeQuestion _placeValue(PracticeConfig c) {
+    final n = _between(1000, 999999);
+    final s = n.toString();
+    final index = _between(0, s.length - 1);
+    final digit = int.parse(s[index]);
+    final place = s.length - index - 1;
+    return _numeric('Place value of digit $digit in $n = ?', digit * pow(10, place).toInt());
+  }
+
+  PracticeQuestion _factors(PracticeConfig c) {
+    final a = _between(12, 80 * _scale(c.complexity));
+    final b = _between(12, 80 * _scale(c.complexity));
+    final mode = _random.nextInt(3);
+    if (mode == 0) return _numeric('HCF($a, $b) = ?', _gcd(a, b));
+    if (mode == 1) return _numeric('LCM($a, $b) = ?', _lcm(a, b));
+    final n = _between(12, 100 * _scale(c.complexity));
+    return _numeric('Number of positive factors of $n = ?', _factorCount(n));
+  }
+
+  PracticeQuestion _divisibility(PracticeConfig c) {
+    final d = [2, 3, 4, 5, 6, 8, 9, 10, 11][_random.nextInt(9)];
+    final base = _between(100, 9999);
+    final digit = _between(0, 9);
+    final n = int.parse('$base$digit');
+    return _text('Is $n divisible by $d?', n % d == 0 ? 'Yes' : 'No');
+  }
+
+  PracticeQuestion _remainders(PracticeConfig c) {
+    final base = _between(2, 20), exponent = _between(2, 12 * _scale(c.complexity));
+    final mod = _between(2, 12);
+    return _numeric('$base^$exponent mod $mod = ?', _powMod(base, exponent, mod));
+  }
+
+  PracticeQuestion _averages(PracticeConfig c) {
+    final count = _between(3, 7), average = _between(8, 40 * _scale(c.complexity));
+    final changed = _between(1, count);
+    final delta = _between(1, 10);
+    final newAverage = average + delta / count;
+    if (_random.nextBool()) {
+      return _numeric('$count values average $average. Add $delta to one value. New average = ?', newAverage);
     }
+    return _numeric('Total of $count values with average $average = ?', count * average);
   }
 
-  PracticeQuestion _bodmas(PracticeConfig c) {
-    final s = _scale(c.complexity),
-        a = _between(2, 9 * s),
-        b = _between(2, 9 * s),
-        d = _between(2, 9);
-    return _numeric('$a + $b × $d = ?', a + b * d);
+  PracticeQuestion _ratio(PracticeConfig c) {
+    final a = _between(2, 12), b = _between(2, 15), total = (a + b) * _between(2, 12);
+    return _numeric('Divide $total in ratio $a:$b. Larger share = ?', max(a, b) * total ~/ (a + b));
   }
 
-  PracticeQuestion _simplification(PracticeConfig c) {
-    final s = _scale(c.complexity),
-        a = _between(2, 20 * s),
-        b = _between(2, 10 * s),
-        mode = _random.nextInt(3);
-    if (mode == 0) return _numeric('$a × 3 − $b = ?', a * 3 - b);
-    if (mode == 1) return _numeric('($a + $b) ÷ 2 = ?', (a + b) ~/ 2);
-    return _numeric('$a + $b × 2 = ?', a + b * 2);
+  PracticeQuestion _percentage(PracticeConfig c) {
+    final pct = [5, 10, 12, 15, 20, 25, 30, 40, 50, 75][_random.nextInt(10)];
+    final base = _between(20, 1000 ~/ max(1, pct) * 10);
+    return _numeric('$pct% of $base = ?', base * pct / 100);
+  }
+
+  PracticeQuestion _profitLoss(PracticeConfig c) {
+    final cp = _between(50, 1000 * _scale(c.complexity));
+    final pct = _between(5, 30);
+    if (_random.nextBool()) return _numeric('CP $cp, profit $pct%. SP = ?', cp * (100 + pct) / 100);
+    return _numeric('CP $cp, loss $pct%. SP = ?', cp * (100 - pct) / 100);
+  }
+
+  PracticeQuestion _interest(PracticeConfig c) {
+    final p = _between(100, 2000 * _scale(c.complexity));
+    final r = _between(2, 12), t = _between(1, 4);
+    if (_random.nextBool()) return _numeric('SI on $p at $r% for $t years = ?', p * r * t / 100);
+    return _numeric('Amount with CI: $p at $r% for $t years = ?', p * pow(1 + r / 100, t));
+  }
+
+  PracticeQuestion _mixture(PracticeConfig c) {
+    final low = _between(10, 30), high = _between(low + 10, 70), target = _between(low + 2, high - 2);
+    final ratioHigh = target - low, ratioLow = high - target;
+    return _numeric('Mix $low% and $high% to get $target%. Ratio low:high = ?', ratioLow * 100 + ratioHigh, inputHint: 'Enter low:high as a:b');
+  }
+
+  PracticeQuestion _partnership(PracticeConfig c) {
+    final a = _between(2, 10), b = _between(2, 12), monthsA = _between(3, 12), monthsB = _between(3, 12);
+    final profit = (a * monthsA + b * monthsB) * 10;
+    return _numeric('Capital-time units total = ?', profit);
+  }
+
+  PracticeQuestion _ages(PracticeConfig c) {
+    final younger = _between(8, 25), gap = _between(3, 15), years = _between(2, 8);
+    return _numeric('$years years later, older age if current younger=$younger and gap=$gap = ?', younger + gap + years);
+  }
+
+  PracticeQuestion _timeWork(PracticeConfig c) {
+    final a = _between(4, 12), b = _between(4, 15);
+    return _numeric('A takes $a days, B takes $b days. Together: days?', a * b / (a + b));
+  }
+
+  PracticeQuestion _pipes(PracticeConfig c) {
+    final fill = _between(4, 12), drain = _between(fill + 2, 20);
+    return _numeric('Pipe fills in $fill h, leak drains in $drain h. Net fill time?', fill * drain / (drain - fill));
+  }
+
+  PracticeQuestion _speedDistance(PracticeConfig c) {
+    final speed = _between(20, 90), time = _between(2, 6);
+    return _numeric('Distance at $speed km/h for $time h = ?', speed * time);
+  }
+
+  PracticeQuestion _trains(PracticeConfig c) {
+    final length = _between(80, 300), platform = _between(100, 500), speed = _between(10, 60);
+    return _numeric('Train $length m crosses $platform m platform at $speed m/s. Time = ?', (length + platform) / speed);
+  }
+
+  PracticeQuestion _boats(PracticeConfig c) {
+    final downstream = _between(10, 30), upstream = _between(4, downstream - 2);
+    return _numeric('Downstream $downstream km/h, upstream $upstream km/h. Still-water speed = ?', (downstream + upstream) / 2);
   }
 
   PracticeQuestion _series(PracticeConfig c) {
-    final s = _scale(c.complexity),
-        start = _between(1, 20 * s),
-        step = _between(2, 5 * s);
-    final mode = _random.nextInt(
-      c.complexity == PracticeComplexity.hard ? 3 : 2,
-    );
+    final start = _between(1, 20), step = _between(2, 10);
+    final mode = _random.nextInt(3);
     if (mode == 0) {
-      final values = List.generate(4, (i) => start + i * step);
-      return _numeric('${values.join(', ')}, ?', values.last + step);
+      final v = List.generate(4, (i) => start + i * step);
+      return _numeric('${v.join(', ')}, ? ', v.last + step);
     }
     if (mode == 1) {
-      final values = List.generate(4, (i) => start * pow(2, i).toInt());
-      return _numeric('${values.join(', ')}, ?', values.last * 2);
+      final v = List.generate(4, (i) => start * pow(2, i).toInt());
+      return _numeric('${v.join(', ')}, ?', v.last * 2);
     }
-    final values = List.generate(4, (i) => start + i * (i + 1));
-    return _numeric('${values.join(', ')}, ?', values.last + 5);
+    final v = List.generate(4, (i) => start + i * i);
+    return _numeric('${v.join(', ')}, ?', v.last + 9);
   }
 
-  PracticeQuestion _linear(PracticeConfig c) {
-    final s = _scale(c.complexity),
-        x = _between(1, 8 * s),
-        m = _between(2, 7),
-        b = _between(1, 9 * s);
-    return _numeric(
-      '${m}x + $b = ${m * x + b},  x = ?',
-      x,
-      inputHint: 'Value of x',
-    );
+  PracticeQuestion _ap(PracticeConfig c) {
+    final a = _between(1, 20), d = _between(2, 10), n = _between(5, 20);
+    return _numeric('AP: a=$a, d=$d. Term $n = ?', a + (n - 1) * d);
   }
 
-  PracticeQuestion _quadratic(PracticeConfig c) {
-    final s = _scale(c.complexity),
-        x = _between(1, 3 * s),
-        other = _between(1, 3 * s);
-    return _numeric(
-      'x² − ${x + other}x + ${x * other} = 0; smaller positive x = ?',
-      min(x, other),
-      inputHint: 'Value of x',
-    );
+  PracticeQuestion _gp(PracticeConfig c) {
+    final a = _between(1, 5), r = _between(2, 4), n = _between(3, 7);
+    return _numeric('GP: a=$a, r=$r. Term $n = ?', a * pow(r, n - 1));
   }
 
-  PracticeQuestion _cubic(PracticeConfig c) {
-    final x = _between(1, 4 * _scale(c.complexity));
-    return _numeric('x³ = ${x * x * x}; x = ?', x, inputHint: 'Value of x');
+  PracticeQuestion _patterns(PracticeConfig c) {
+    final n = _between(2, 10);
+    final values = List.generate(4, (i) => (n + i) * (n + i + 1));
+    return _numeric('${values.join(', ')}, ?', (n + 4) * (n + 5));
   }
 
-  PracticeQuestion _unitDigit(PracticeConfig c) {
-    final base = _between(2, 9),
-        exponent = _between(3, 8 * _scale(c.complexity));
-    return _numeric(
-      'Unit digit of $base^$exponent = ?',
-      _powMod(base, exponent, 10),
-    );
+  PracticeQuestion _polynomials(PracticeConfig c) {
+    final root = _between(-6, 6);
+    final x = _between(1, 8);
+    return _numeric('For p(x)=x²−${2 * root}x+${root * root}, p($x)=?', (x - root) * (x - root));
   }
 
-  PracticeQuestion _powers(PracticeConfig c) {
-    final base = _between(2, c.complexity == PracticeComplexity.hard ? 9 : 6),
-        exp = _between(2, 2 + _scale(c.complexity));
-    return _numeric('$base^$exp = ?', pow(base, exp).toInt());
+  PracticeQuestion _geometry(PracticeConfig c) {
+    final a = _between(30, 100), b = _between(20, 80);
+    return _numeric('Triangle angles: $a°, $b°, third angle = ?', 180 - a - b);
   }
 
-  PracticeQuestion _equationMix(PracticeConfig c) =>
-      _random.nextBool() ? _linear(c) : _quadratic(c);
+  PracticeQuestion _mensuration2d(PracticeConfig c) {
+    final w = _between(3, 20), h = _between(3, 20);
+    return _numeric('Rectangle $w × $h. Area = ?', w * h);
+  }
+
+  PracticeQuestion _mensuration3d(PracticeConfig c) {
+    final r = _between(2, 10), h = _between(3, 15);
+    return _numeric('Cylinder r=$r, h=$h. Volume / π = ?', r * r * h);
+  }
+
+  PracticeQuestion _pythagorean(PracticeConfig c) {
+    final a = _between(3, 12), b = _between(4, 16);
+    final c2 = a * a + b * b;
+    final root = sqrt(c2);
+    return _numeric('Right triangle legs $a and $b. Hypotenuse ≈ ?', root);
+  }
 
   PracticeQuestion _trigonometry(PracticeConfig c) {
-    final pool = c.complexity == PracticeComplexity.easy
-        ? const <String, num>{
-            'sin 0°': 0,
-            'sin 30°': 0.5,
-            'sin 90°': 1,
-            'cos 0°': 1,
-            'cos 60°': 0.5,
-            'tan 0°': 0,
-          }
-        : const <String, num>{
-            'sin 30° × 2': 1,
-            'cos 60° × 2': 1,
-            'sin 90°': 1,
-            'cos 0°': 1,
-            'tan 45°': 1,
-          };
+    const pool = <String, num>{'sin 30°': .5, 'cos 60°': .5, 'tan 45°': 1, 'sin 90°': 1, 'cos 0°': 1, 'tan 0°': 0};
     final prompt = pool.keys.elementAt(_random.nextInt(pool.length));
     return _numeric('$prompt = ?', pool[prompt]!);
   }
 
-  PracticeQuestion _diAddition(PracticeConfig c) {
-    final s = _scale(c.complexity),
-        rows = c.complexity == PracticeComplexity.hard ? 5 : 4;
-    final values = List.generate(rows, (_) => _between(10, 99 * s));
-    return _numeric(
-      'DI total: ${values.join(' + ')} = ?',
-      values.fold(0, (a, b) => a + b),
-    );
+  PracticeQuestion _pnC(PracticeConfig c) {
+    final n = _between(4, 10), r = _between(2, min(5, n));
+    final value = _random.nextBool() ? _nPr(n, r) : _nCr(n, r);
+    return _numeric('${_random.nextBool() ? 'nPr' : 'nCr'}($n,$r) = ?', value);
+  }
+
+  PracticeQuestion _probability(PracticeConfig c) {
+    final red = _between(1, 8), blue = _between(1, 8);
+    return _numeric('Bag has $red red and $blue blue. P(red) = ?', red / (red + blue));
+  }
+
+  PracticeQuestion _dataInterpretation(PracticeConfig c) {
+    final rows = List.generate(4, (_) => _between(20, 150));
+    final total = rows.fold(0, (a, b) => a + b);
+    return _numeric('Data values ${rows.join(', ')}. Total = ?', total);
+  }
+
+  PracticeQuestion _statistics(PracticeConfig c) {
+    final values = List.generate(5, (_) => _between(5, 50))..sort();
+    final mode = values[2];
+    return _numeric('Sorted data ${values.join(', ')}. Median = ?', mode);
+  }
+
+  PracticeQuestion _mentalMultiplication(PracticeConfig c) {
+    final base = _random.nextBool() ? 100 : 50;
+    final n = _between(10, 99);
+    if (base == 100) return _numeric('$n × 100 = ?', n * 100);
+    return _numeric('$n × 50 = ?', n * 50);
+  }
+
+  PracticeQuestion _fastDivision(PracticeConfig c) {
+    final q = _between(5, 100), d = [4, 5, 10, 20, 25, 50][_random.nextInt(6)];
+    return _numeric('${q * d} ÷ $d = ?', q);
+  }
+
+  PracticeQuestion _bodmas(PracticeConfig c) {
+    final a = _between(2, 12), b = _between(2, 12), d = _between(2, 8);
+    return _numeric('$a + $b × $d = ?', a + b * d);
+  }
+
+  PracticeQuestion _simplification(PracticeConfig c) {
+    final a = _between(10, 50), b = _between(2, 10);
+    return _numeric('($a + $b) × 2 − $b = ?', (a + b) * 2 - b);
+  }
+
+  PracticeQuestion _linear(PracticeConfig c) {
+    final x = _between(1, 20), m = _between(2, 8), b = _between(1, 15);
+    return _numeric('${m}x + $b = ${m * x + b}; x = ?', x, inputHint: 'Value of x');
+  }
+
+  PracticeQuestion _quadratic(PracticeConfig c) {
+    final a = _between(1, 8), b = _between(1, 8);
+    return _numeric('x² − ${a + b}x + ${a * b} = 0; smaller root = ?', min(a, b), inputHint: 'Value of x');
+  }
+
+  PracticeQuestion _cubic(PracticeConfig c) {
+    final x = _between(2, 8);
+    return _numeric('x³ = ${x * x * x}; x = ?', x, inputHint: 'Value of x');
+  }
+
+  PracticeQuestion _unitDigit(PracticeConfig c) {
+    final base = _between(2, 9), exponent = _between(2, 40);
+    return _numeric('Unit digit of $base^$exponent = ?', _powMod(base, exponent, 10));
+  }
+
+  PracticeQuestion _powers(PracticeConfig c) {
+    final base = _between(2, 8), exp = _between(2, 5);
+    return _numeric('$base^$exp = ?', pow(base, exp));
+  }
+
+  PracticeQuestion _equationMix(PracticeConfig c) => _random.nextBool() ? _linear(c) : _quadratic(c);
+
+  PracticeQuestion _fraction(PracticeComplexity complexity) {
+    const pool = {'1/2': .5, '1/4': .25, '3/8': .375, '5/8': .625, '7/20': .35, '9/25': .36};
+    final key = pool.keys.elementAt(_random.nextInt(pool.length));
+    return _numeric('$key = decimal ?', pool[key]!);
   }
 
   PracticeQuestion _quickRecallWorkout(PracticeConfig c) {
-    final mode = _random.nextInt(4);
-    if (mode == 0) {
-      final n = _between(11, 30);
-      return _numeric('$n² = ?', n * n);
-    }
-    if (mode == 1) {
-      final a = _between(2, 12), b = _between(2, 12);
-      return _numeric('$a × $b = ?', a * b);
-    }
-    if (mode == 2) {
-      final r = _between(2, 20);
-      return _numeric('√${r * r} = ?', r);
-    }
-    return _percentage(c, 20, 1000);
+    final generators = <PracticeQuestion Function()>[
+      () => _square(c), () => _cube(c), () => _percentage(c), () => _multiplication(c),
+    ];
+    return generators[_random.nextInt(generators.length)]();
   }
 
   PracticeQuestion _basicsWorkout(PracticeConfig c) {
-    final s = _scale(c.complexity),
-        a = _between(10, 99 * s),
-        b = _between(2, 30 * s);
-    switch (_random.nextInt(4)) {
-      case 0:
-        return _numeric('$a + $b = ?', a + b);
-      case 1:
-        final high = max(a, b), low = min(a, b);
-        return _numeric('$high − $low = ?', high - low);
-      case 2:
-        return _numeric('$a × $b = ?', a * b);
-      default:
-        return _numeric('${a * b} ÷ $a = ?', b);
+    final generators = <PracticeQuestion Function()>[
+      () => _arithmetic(c), () => _multiplication(c), () => _division(c), () => _percentage(c),
+    ];
+    return generators[_random.nextInt(generators.length)]();
+  }
+
+  PracticeQuestion _advancedMix(PracticeConfig c) {
+    final generators = <PracticeQuestion Function()>[
+      () => _averages(c), () => _ratio(c), () => _remainders(c), () => _patterns(c),
+      () => _quadratic(c), () => _probability(c), () => _dataInterpretation(c),
+    ];
+    return generators[_random.nextInt(generators.length)]();
+  }
+
+  PracticeQuestion _miscellaneousMix(PracticeConfig c) => _advancedMix(c);
+
+  PracticeQuestion _text(String prompt, String answer) => PracticeQuestion(
+        prompt: prompt,
+        answer: answer,
+        options: _textOptions(answer),
+        inputHint: 'Answer',
+      );
+
+  PracticeQuestion _numeric(String prompt, num answer, {String inputHint = 'Answer'}) {
+    final text = _format(answer);
+    return PracticeQuestion(prompt: prompt, answer: text, options: _numberOptions(answer), inputHint: inputHint);
+  }
+
+  List<String> _textOptions(String answer) {
+    final values = <String>{answer};
+    const alternatives = ['Yes', 'No', 'even', 'odd', 'negative', 'non-negative', 'positive'];
+    for (final value in alternatives) {
+      if (value != answer) values.add(value);
+      if (values.length == 4) break;
     }
-  }
-
-  PracticeQuestion _complexityMix(PracticeConfig c) {
-    final generators = <PracticeQuestion Function()>[
-      () => _bodmas(c),
-      () => _series(c),
-      () => _linear(c),
-      () => _unitDigit(c),
-      () => _powers(c),
-    ];
-    return generators[_random.nextInt(generators.length)]();
-  }
-
-  PracticeQuestion _miscellaneousMix(PracticeConfig c) {
-    final generators = <PracticeQuestion Function()>[
-      () => _bodmas(c),
-      () => _simplification(c),
-      () => _series(c),
-      () => _equationMix(c),
-      () => _unitDigit(c),
-    ];
-    return generators[_random.nextInt(generators.length)]();
-  }
-
-  PracticeQuestion _numeric(
-    String prompt,
-    num answer, {
-    String inputHint = 'Answer',
-  }) {
-    final text = _formatNumber(answer);
-    return PracticeQuestion(
-      prompt: prompt,
-      answer: text,
-      options: _numberOptions(answer),
-      inputHint: inputHint,
-    );
+    return values.toList()..shuffle(_random);
   }
 
   List<String> _numberOptions(num answer) {
     final values = <num>{answer};
     final spread = max(1, answer.abs() < 10 ? 1 : answer.abs() ~/ 10);
     var guard = 0;
-    while (values.length < 4 && guard++ < 100)
+    while (values.length < 4 && guard++ < 100) {
       values.add(answer + _between(-spread * 3, spread * 3));
-    while (values.length < 4) values.add(answer + values.length);
-    final result = values.map(_formatNumber).toList()..shuffle(_random);
-    return result;
-  }
-
-  List<String> _decimalOptions(String answer) {
-    final value = double.parse(answer), values = <String>{answer};
-    for (var i = 1; values.length < 4; i++) {
-      final candidate = (value + (i.isEven ? i : -i) / 100)
-          .toStringAsFixed(4)
-          .replaceFirst(RegExp(r'0+\$'), '')
-          .replaceFirst(RegExp(r'\.\$'), '');
-      values.add(candidate);
     }
-    final result = values.toList()..shuffle(_random);
-    return result;
+    while (values.length < 4) values.add(answer + values.length);
+    return values.map(_format).toList()..shuffle(_random);
   }
 
-  String _formatNumber(num value) {
-    if (value == value.roundToDouble()) return value.round().toString();
-    return value
-        .toStringAsFixed(4)
-        .replaceFirst(RegExp(r'0+\$'), '')
-        .replaceFirst(RegExp(r'\.\$'), '');
+  String _format(num value) {
+    if (value.isFinite && value == value.roundToDouble()) return value.round().toString();
+    return value.toStringAsFixed(4).replaceFirst(RegExp(r'0+\$'), '').replaceFirst(RegExp(r'\.\$'), '');
+  }
+
+  int _gcd(int a, int b) {
+    a = a.abs();
+    b = b.abs();
+    while (b != 0) {
+      final t = a % b;
+      a = b;
+      b = t;
+    }
+    return a;
+  }
+
+  int _lcm(int a, int b) => (a ~/ _gcd(a, b)) * b;
+
+  int _factorCount(int n) {
+    var count = 0;
+    for (var i = 1; i * i <= n; i++) {
+      if (n % i == 0) count += i * i == n ? 1 : 2;
+    }
+    return count;
   }
 
   int _powMod(int base, int exponent, int mod) {
-    var result = 1, b = base % mod, e = exponent;
+    var result = 1;
+    var b = base % mod;
+    var e = exponent;
     while (e > 0) {
       if (e.isOdd) result = result * b % mod;
       b = b * b % mod;
@@ -445,12 +559,12 @@ class PracticeQuestionEngine {
     return result;
   }
 
-  int _gcd(int a, int b) {
-    while (b != 0) {
-      final t = a % b;
-      a = b;
-      b = t;
-    }
-    return a.abs();
+  int _factorial(int n) {
+    var result = 1;
+    for (var i = 2; i <= n; i++) result *= i;
+    return result;
   }
+
+  int _nPr(int n, int r) => _factorial(n) ~/ _factorial(n - r);
+  int _nCr(int n, int r) => _nPr(n, r) ~/ _factorial(r);
 }
