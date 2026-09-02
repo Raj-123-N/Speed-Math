@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
 import '../../core/models/quiz_category.dart';
-import '../../core/services/practice_feedback_service.dart';
 import '../../core/widgets/speed_app_bar.dart';
 import 'screens/practice_progress_screen.dart';
+import 'services/practice_progress_service.dart';
 import 'widgets/math_category_card.dart';
 
 class PracticeScreen extends StatefulWidget {
@@ -14,7 +14,6 @@ class PracticeScreen extends StatefulWidget {
 }
 
 class _PracticeScreenState extends State<PracticeScreen> {
-  final _feedback = PracticeFeedbackService.instance;
   int _streak = 0;
 
   @override
