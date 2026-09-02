@@ -7,6 +7,8 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
 import '../../app/theme/theme_provider.dart';
 import '../../core/services/app_update_service.dart';
+import '../../core/services/app_utility_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/services/practice_feedback_service.dart';
 import '../../core/widgets/update_dialog.dart';
 
@@ -19,7 +21,10 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _updateService = AppUpdateService();
   final _feedback = PracticeFeedbackService.instance;
-  bool _soundEnabled = true, _vibrationEnabled = true, _animationsEnabled = true, _notificationsEnabled = true, _autoCheckUpdates = true;
+  final _notifications = NotificationService.instance;
+  final _utilities = AppUtilityService.instance;
+  bool _soundEnabled = true, _vibrationEnabled = true, _animationsEnabled = true;
+  bool _notificationsEnabled = true, _dailyReminder = true, _smartReminder = true, _autoCheckUpdates = true;
   String? _lastCheckStr;
   static const _keys = {'sound': 'settings_sound', 'vibration': 'settings_vibration', 'animations': 'settings_practice_animations', 'notifications': 'settings_notifications'};
 
@@ -30,10 +35,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     final autoCheck = await _updateService.isAutoCheckEnabled();
     final lastCheck = await _updateService.getLastCheckTime();
-    try { await PackageInfo.fromPlatform(); } catch (_) {}
+    final daily = await _notifications.isDailyReminderEnabled();
+    final smart = await _notifications.isSmartReminderEnabled();
     final lastCheckFormatted = lastCheck == null ? null : DateFormat('MMM d, h:mm a').format(lastCheck);
+    try { await PackageInfo.fromPlatform(); } catch (_) {}
     if (!mounted) return;
-    setState(() { _soundEnabled = prefs.getBool(_keys['sound']!) ?? true; _vibrationEnabled = prefs.getBool(_keys['vibration']!) ?? true; _animationsEnabled = prefs.getBool(_keys['animations']!) ?? true; _notificationsEnabled = prefs.getBool(_keys['notifications']!) ?? true; _autoCheckUpdates = autoCheck; _lastCheckStr = lastCheckFormatted; });
+    setState(() {
+      _soundEnabled = prefs.getBool(_keys['sound']!) ?? true;
+      _vibrationEnabled = prefs.getBool(_keys['vibration']!) ?? true;
+      _animationsEnabled = prefs.getBool(_keys['animations']!) ?? true;
+      _notificationsEnabled = prefs.getBool(_keys['notifications']!) ?? true;
+      _dailyReminder = daily;
+      _smartReminder = smart;
+      _autoCheckUpdates = autoCheck;
+      _lastCheckStr = lastCheckFormatted;
+    });
     await _feedback.refresh();
   }
 
@@ -45,7 +61,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() { switch (key) { case 'sound': _soundEnabled = value; break; case 'vibration': _vibrationEnabled = value; break; case 'animations': _animationsEnabled = value; break; case 'notifications': _notificationsEnabled = value; break; } });
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keys[key]!, value);
+    if (key == 'notifications') await _notifications.setEnabled(value);
     if (key == 'sound' || key == 'vibration' || key == 'animations') await _feedback.refresh();
+  }
+
+  Future<void> _setReminder(String type, bool value) async {
+    setState(() { if (type == 'daily') _dailyReminder = value; else _smartReminder = value; });
+    if (type == 'daily') await _notifications.setDailyReminder(value); else await _notifications.setSmartReminder(value);
+  }
+
+  Future<void> _share() async {
+    try { await _utilities.shareApp(); } catch (_) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open sharing.'))); }
+  }
+
+  Future<void> _rate() async {
+    try { await _utilities.rateApp(); } catch (_) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open rating.'))); }
   }
 
   @override
@@ -69,12 +99,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _ToggleRow(icon: Icons.animation_rounded, label: 'Practice Animations', subtitle: 'Question transitions, answer feedback and result motion', value: _animationsEnabled, isDark: isDark, color: AppColors.primary, onChanged: (v) => _saveBool('animations', v)),
       ]),
       _SectionHeader(label: 'Notifications', isDark: isDark),
-      _SettingsCard(isDark: isDark, children: [_ToggleRow(icon: Icons.notifications_rounded, label: 'Push Notifications', subtitle: 'Daily reminders and alerts', value: _notificationsEnabled, isDark: isDark, color: AppColors.module1Color, onChanged: (v) => _saveBool('notifications', v))]),
+      _SettingsCard(isDark: isDark, children: [
+        _ToggleRow(icon: Icons.notifications_rounded, label: 'Practice Notifications', subtitle: 'Allow reminders to practise learned topics', value: _notificationsEnabled, isDark: isDark, color: AppColors.module1Color, onChanged: (v) => _saveBool('notifications', v)),
+        _Divider(isDark: isDark),
+        _ToggleRow(icon: Icons.event_available_rounded, label: 'Daily Practice Reminder', subtitle: 'One reliable evening reminder every day', value: _dailyReminder, isDark: isDark, color: AppColors.module2Color, onChanged: (v) => _setReminder('daily', v)),
+        _Divider(isDark: isDark),
+        _ToggleRow(icon: Icons.auto_awesome_rounded, label: 'Smart Random Reminder', subtitle: 'One varied reminder at a different time each day', value: _smartReminder, isDark: isDark, color: AppColors.module3Color, onChanged: (v) => _setReminder('smart', v)),
+      ]),
+      _SectionHeader(label: 'Share & Support', isDark: isDark),
+      _SettingsCard(isDark: isDark, children: [
+        _ActionRow(icon: Icons.share_rounded, label: 'Share this App', subtitle: 'Share Speed Math with friends', isDark: isDark, color: AppColors.primary, onTap: _share),
+        _Divider(isDark: isDark),
+        _ActionRow(icon: Icons.star_rate_rounded, label: 'Rate this App', subtitle: 'Leave a rating when store review is available', isDark: isDark, color: AppColors.module3Color, onTap: _rate),
+      ]),
       _SectionHeader(label: 'App Updates', isDark: isDark),
       _SettingsCard(isDark: isDark, children: [
-        _ToggleRow(icon: Icons.sync_rounded, label: 'Auto-Check for Updates', subtitle: 'Check for new releases periodically', value: _autoCheckUpdates, isDark: isDark, color: AppColors.module3Color, onChanged: (v) async { setState(() => _autoCheckUpdates = v); await _updateService.setAutoCheckEnabled(v); }),
+        _ToggleRow(icon: Icons.sync_rounded, label: 'Automatic Update Check', subtitle: 'Check for new releases periodically', value: _autoCheckUpdates, isDark: isDark, color: AppColors.module3Color, onChanged: (v) async { setState(() => _autoCheckUpdates = v); await _updateService.setAutoCheckEnabled(v); }),
         _Divider(isDark: isDark),
-        _ActionRow(icon: Icons.system_update_alt_rounded, label: 'Check for Updates', subtitle: _lastCheckStr != null ? 'Last checked: $_lastCheckStr' : 'Tap to check GitHub Releases', isDark: isDark, color: AppColors.primary, onTap: _checkForUpdatesManually, trailing: 'Check'),
+        _ActionRow(icon: Icons.system_update_alt_rounded, label: 'Check for Update', subtitle: _lastCheckStr != null ? 'Last checked: $_lastCheckStr' : 'Check the latest GitHub Release', isDark: isDark, color: AppColors.primary, onTap: _checkForUpdatesManually, trailing: 'Check'),
       ]),
       const SizedBox(height: 16),
     ]));
