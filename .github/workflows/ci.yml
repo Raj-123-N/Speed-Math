@@ -82,7 +82,7 @@ jobs:
             -keystore "$GITHUB_WORKSPACE/ci-release.jks" \
             -storepass ci-only-store-password \
             -alias speed_math_ci \
-            -keypass ci-only-key-password \
+            -keypass ci-only-store-password \
             -keyalg RSA \
             -keysize 2048 \
             -validity 1 \
@@ -90,7 +90,7 @@ jobs:
             -noprompt
           cat > android/key.properties <<EOF
           storePassword=ci-only-store-password
-          keyPassword=ci-only-key-password
+          keyPassword=ci-only-store-password
           keyAlias=speed_math_ci
           storeFile=$GITHUB_WORKSPACE/ci-release.jks
           EOF
