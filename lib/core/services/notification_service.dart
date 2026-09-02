@@ -25,10 +25,10 @@ class NotificationService {
     if (_initialized || kIsWeb) return;
     tz.initializeTimeZones();
     try {
-      final zone = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(zone.identifier));
+      final zoneName = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(zoneName));
     } catch (_) {
-      // The timezone database still gives us a safe fallback location.
+      // The timezone database remains available if the platform lookup fails.
     }
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -73,8 +73,7 @@ class NotificationService {
     for (var dayOffset = 0; dayOffset < 7; dayOffset++) {
       final day = DateTime(now.year, now.month, now.day + dayOffset);
       if (daily) {
-        final dailyHour = 19;
-        final dailyTime = tz.TZDateTime(tz.local, day.year, day.month, day.day, dailyHour, 0);
+        final dailyTime = tz.TZDateTime(tz.local, day.year, day.month, day.day, 19);
         if (dailyTime.isAfter(now)) {
           await _schedule(
             _dailyIdBase + dayOffset,
