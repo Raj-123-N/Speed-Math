@@ -1,0 +1,19 @@
+name: speed_math_admin
+description: Admin console for Speed Math curriculum publishing.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  speed_math_content:
+    path: ../packages/speed_math_content
+  firebase_core: ^4.14.0
+  firebase_auth: ^6.6.1
+  cloud_firestore: ^6.9.0
+
+flutter:
+  uses-material-design: true
