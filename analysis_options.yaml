@@ -1,4 +1,3 @@
-# Analyzer configuration for the end-user Flutter package.
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
@@ -17,3 +16,6 @@ linter:
     curly_braces_in_flow_control_structures: false
     unnecessary_underscores: false
     unnecessary_brace_in_string_interps: false
+    unused_field: ignore
+    unused_element: ignore
+    prefer_interpolation_to_compose_strings: ignore
