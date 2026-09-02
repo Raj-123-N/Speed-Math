@@ -28,9 +28,8 @@ class _SpeedMathAppState extends State<SpeedMathApp> {
     final service = AppUpdateService();
     try {
       final info = await service.checkForUpdate();
-      final navigatorContext = rootNavigatorKey.currentContext;
-      if (!mounted || navigatorContext == null || info == null || !info.hasUpdate) return;
-      await UpdateDialog.show(navigatorContext, info: info, updateService: service);
+      if (!mounted || info == null || !info.hasUpdate) return;
+      await UpdateDialog.show(context, info: info, updateService: service);
     } catch (_) {
       // Update checks are optional and must never block normal app usage.
     }
