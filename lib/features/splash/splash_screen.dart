@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
@@ -27,16 +29,26 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _textFadeAnim;
   late Animation<double> _pulseAnim;
 
+  Timer? _logoTimer;
+  Timer? _navigationTimer;
   bool _navigationCancelled = false;
 
   @override
   void initState() {
     super.initState();
 
-    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
-    _logoCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))
-      ..repeat(reverse: true);
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _logoCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
 
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
     _logoScaleAnim = Tween<double>(begin: 0.6, end: 1.0).animate(
@@ -59,19 +71,23 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _fadeCtrl.forward();
-    Future.delayed(const Duration(milliseconds: 200), () {
+    _logoTimer = Timer(const Duration(milliseconds: 200), () {
       if (!_navigationCancelled && mounted) _logoCtrl.forward();
     });
-    _scheduleNavigation();
+    _navigationTimer = Timer(
+      const Duration(milliseconds: 2800),
+      _navigateToHome,
+    );
   }
 
-  Future<void> _scheduleNavigation() async {
-    await Future.delayed(const Duration(milliseconds: 2800));
+  Future<void> _navigateToHome() async {
     if (_navigationCancelled || !mounted) return;
 
     var initialTab = 1;
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (_navigationCancelled || !mounted) return;
+
       final lastDate = prefs.getString('last_date');
       final today = DateTime.now().toIso8601String().substring(0, 10);
       if (lastDate == today) {
@@ -89,6 +105,8 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void dispose() {
     _navigationCancelled = true;
+    _logoTimer?.cancel();
+    _navigationTimer?.cancel();
     _fadeCtrl.dispose();
     _logoCtrl.dispose();
     _pulseCtrl.dispose();
@@ -150,7 +168,10 @@ class _SplashScreenState extends State<SplashScreen>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: const LinearGradient(
-                            colors: [AppColors.gradOrangeStart, AppColors.gradOrangeEnd],
+                            colors: [
+                              AppColors.gradOrangeStart,
+                              AppColors.gradOrangeEnd,
+                            ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -164,7 +185,10 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(18),
-                          child: Lottie.asset(AppAssets.animMathLoader, repeat: true),
+                          child: Lottie.asset(
+                            AppAssets.animMathLoader,
+                            repeat: true,
+                          ),
                         ),
                       ),
                     ),
