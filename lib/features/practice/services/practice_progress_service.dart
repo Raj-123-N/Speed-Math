@@ -1,18 +1,8 @@
 import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PracticeSessionRecord {
-  const PracticeSessionRecord({
-    required this.date,
-    required this.topicId,
-    required this.topicName,
-    required this.questions,
-    required this.correct,
-    required this.elapsedSeconds,
-    required this.accuracy,
-  });
-
+  const PracticeSessionRecord({required this.date, required this.topicId, required this.topicName, required this.questions, required this.correct, required this.elapsedSeconds, required this.accuracy});
   final DateTime date;
   final String topicId;
   final String topicName;
@@ -20,39 +10,12 @@ class PracticeSessionRecord {
   final int correct;
   final int elapsedSeconds;
   final double accuracy;
-
-  Map<String, dynamic> toJson() => {
-        'date': date.toIso8601String(),
-        'topicId': topicId,
-        'topicName': topicName,
-        'questions': questions,
-        'correct': correct,
-        'elapsedSeconds': elapsedSeconds,
-        'accuracy': accuracy,
-      };
-
-  factory PracticeSessionRecord.fromJson(Map<String, dynamic> json) => PracticeSessionRecord(
-        date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
-        topicId: json['topicId'] as String? ?? 'unknown',
-        topicName: json['topicName'] as String? ?? 'Practice',
-        questions: (json['questions'] as num?)?.toInt() ?? 0,
-        correct: (json['correct'] as num?)?.toInt() ?? 0,
-        elapsedSeconds: (json['elapsedSeconds'] as num?)?.toInt() ?? 0,
-        accuracy: (json['accuracy'] as num?)?.toDouble() ?? 0,
-      );
+  Map<String, dynamic> toJson() => {'date': date.toIso8601String(), 'topicId': topicId, 'topicName': topicName, 'questions': questions, 'correct': correct, 'elapsedSeconds': elapsedSeconds, 'accuracy': accuracy};
+  factory PracticeSessionRecord.fromJson(Map<String, dynamic> json) => PracticeSessionRecord(date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(), topicId: json['topicId'] as String? ?? 'unknown', topicName: json['topicName'] as String? ?? 'Practice', questions: (json['questions'] as num?)?.toInt() ?? 0, correct: (json['correct'] as num?)?.toInt() ?? 0, elapsedSeconds: (json['elapsedSeconds'] as num?)?.toInt() ?? 0, accuracy: (json['accuracy'] as num?)?.toDouble() ?? 0);
 }
 
 class PracticeBadge {
-  const PracticeBadge({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.unlocked,
-    this.progress = 0,
-    this.target = 1,
-  });
-
+  const PracticeBadge({required this.id, required this.title, required this.description, required this.icon, required this.unlocked, this.progress = 0, this.target = 1});
   final String id;
   final String title;
   final String description;
@@ -65,7 +28,6 @@ class PracticeBadge {
 class PracticeProgressService {
   PracticeProgressService._();
   static final PracticeProgressService instance = PracticeProgressService._();
-
   static const _historyKey = 'practice_session_history_v2';
 
   Future<List<PracticeSessionRecord>> history() async {
@@ -73,47 +35,20 @@ class PracticeProgressService {
     final raw = prefs.getString(_historyKey);
     if (raw == null || raw.isEmpty) return [];
     try {
-      final list = (jsonDecode(raw) as List<dynamic>);
-      return list
-          .whereType<Map<String, dynamic>>()
-          .map(PracticeSessionRecord.fromJson)
-          .toList(growable: false);
-    } catch (_) {
-      return [];
-    }
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.whereType<Map<String, dynamic>>().map(PracticeSessionRecord.fromJson).toList(growable: true);
+    } catch (_) { return []; }
   }
 
-  Future<void> recordSession({
-    required String topicId,
-    required String topicName,
-    required int questions,
-    required int correct,
-    required Duration elapsed,
-  }) async {
+  Future<void> recordSession({required String topicId, required String topicName, required int questions, required int correct, required Duration elapsed}) async {
     final prefs = await SharedPreferences.getInstance();
     final records = await history();
-    final now = DateTime.now();
     final total = questions <= 0 ? 1 : questions;
-    records.insert(
-      0,
-      PracticeSessionRecord(
-        date: now,
-        topicId: topicId,
-        topicName: topicName,
-        questions: questions,
-        correct: correct,
-        elapsedSeconds: elapsed.inSeconds,
-        accuracy: correct / total,
-      ),
-    );
-    final trimmed = records.take(500).map((e) => e.toJson()).toList();
-    await prefs.setString(_historyKey, jsonEncode(trimmed));
+    records.insert(0, PracticeSessionRecord(date: DateTime.now(), topicId: topicId, topicName: topicName, questions: questions, correct: correct, elapsedSeconds: elapsed.inSeconds, accuracy: correct / total));
+    await prefs.setString(_historyKey, jsonEncode(records.take(500).map((e) => e.toJson()).toList()));
   }
 
-  Future<Set<DateTime>> practiceDays() async {
-    final records = await history();
-    return records.map((r) => _day(r.date)).toSet();
-  }
+  Future<Set<DateTime>> practiceDays() async => (await history()).map((r) => _day(r.date)).toSet();
 
   Future<int> currentStreak() async {
     final days = await practiceDays();
@@ -121,25 +56,17 @@ class PracticeProgressService {
     var cursor = _day(DateTime.now());
     if (!days.contains(cursor)) cursor = cursor.subtract(const Duration(days: 1));
     var streak = 0;
-    while (days.contains(cursor)) {
-      streak++;
-      cursor = cursor.subtract(const Duration(days: 1));
-    }
+    while (days.contains(cursor)) { streak++; cursor = cursor.subtract(const Duration(days: 1)); }
     return streak;
   }
 
   Future<int> bestStreak() async {
     final days = (await practiceDays()).toList()..sort();
-    var best = 0;
-    var run = 0;
+    var best = 0, run = 0;
     DateTime? previous;
     for (final day in days) {
-      if (previous != null && day.difference(previous!).inDays == 1) {
-        run++;
-      } else {
-        run = 1;
-      }
-      if (run > best) best = run;
+      run = previous != null && day.difference(previous!).inDays == 1 ? run + 1 : 1;
+      best = maxInt(best, run);
       previous = day;
     }
     return best;
@@ -151,13 +78,10 @@ class PracticeProgressService {
     final days = records.map((r) => _day(r.date)).toSet();
     final streak = await currentStreak();
     final topicCounts = <String, int>{};
-    for (final record in records) {
-      topicCounts[record.topicId] = (topicCounts[record.topicId] ?? 0) + 1;
-    }
-    final bestTopicCount = topicCounts.values.isEmpty ? 0 : topicCounts.values.reduce((a, b) => a > b ? a : b);
+    for (final record in records) topicCounts[record.topicId] = (topicCounts[record.topicId] ?? 0) + 1;
+    final bestTopicCount = topicCounts.values.isEmpty ? 0 : topicCounts.values.reduce(maxInt);
     final bestAccuracy = records.isEmpty ? 0.0 : records.map((r) => r.accuracy).reduce((a, b) => a > b ? a : b);
     final hasFastSession = records.any((r) => r.questions >= 10 && r.elapsedSeconds > 0 && r.elapsedSeconds / r.questions <= 4);
-
     return [
       PracticeBadge(id: 'first_practice', title: 'First Rep', description: 'Complete your first Practice session.', icon: '🎯', unlocked: sessions >= 1, progress: sessions.clamp(0, 1), target: 1),
       PracticeBadge(id: 'ten_sessions', title: 'Regular', description: 'Complete 10 Practice sessions.', icon: '🔥', unlocked: sessions >= 10, progress: sessions.clamp(0, 10), target: 10),
@@ -170,4 +94,5 @@ class PracticeProgressService {
   }
 
   DateTime _day(DateTime value) => DateTime(value.year, value.month, value.day);
+  int maxInt(int a, int b) => a > b ? a : b;
 }
