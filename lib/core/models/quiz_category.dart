@@ -1,80 +1,20 @@
-/// Math operation types confirmed from APK icon assets.
 enum MathOperation {
-  addition,
-  subtraction,
-  multiplication,
-  division,
-  percentage,
-  square,
-  cube,
-  squareRoot,
-  cubeRoot,
-  table,
-  trigonometry,
-  diAddition,
-  mixAdvance,
-  fraction,
-  algebra,
-  simplification,
-  bodmas,
-  series,
-  unitDigit,
-  powers,
-  quadraticEquation,
-  linearEquation,
-  cubicEquation,
-  miscellaneousMix,
-  quickRecallWorkout,
-  basicsWorkout,
-  exponents,
+  addition, subtraction, multiplication, division, percentage, square, cube, squareRoot, cubeRoot, table, trigonometry, diAddition, mixAdvance, fraction, algebra, simplification, bodmas, series, unitDigit, powers, quadraticEquation, linearEquation, cubicEquation, miscellaneousMix, quickRecallWorkout, basicsWorkout, exponents,
+  numberSystem, placeValue, factorsMultiples, divisibility, remainders, averages, ratioProportion, profitLossDiscount, simpleCompoundInterest, mixtureAlligation, partnership, ages, timeWork, pipesCisterns, speedDistance, trains, boatsStreams, arithmeticProgression, geometricProgression, sequencesPatterns, polynomials, geometryBasics, mensuration2d, mensuration3d, pythagorean, permutationCombination, probability, dataInterpretation, statistics, mentalMultiplication, fastDivision,
 }
 
 class QuizCategory {
-  const QuizCategory({required this.id, required this.name, required this.operation, required this.iconAsset, this.isAdvanced = false, this.section = PracticeSection.basics});
-  final String id;
-  final String name;
-  final MathOperation operation;
-  final String iconAsset;
-  final bool isAdvanced;
-  final PracticeSection section;
-
-  static const List<QuizCategory> miscellaneous = [
-    QuizCategory(id: 'bodmas', name: 'BODMAS', operation: MathOperation.bodmas, iconAsset: 'asset/image/icon/complexity.webp', section: PracticeSection.miscellaneous),
-    QuizCategory(id: 'simplification', name: 'Simplification', operation: MathOperation.simplification, iconAsset: 'asset/image/icon/complexity.webp', section: PracticeSection.miscellaneous),
-    QuizCategory(id: 'series', name: 'Number Series', operation: MathOperation.series, iconAsset: 'asset/image/icon/complexity.webp', section: PracticeSection.miscellaneous),
-    QuizCategory(id: 'linear_equation', name: 'Linear Equations', operation: MathOperation.linearEquation, iconAsset: 'asset/image/icon/algebra.webp', section: PracticeSection.miscellaneous),
-    QuizCategory(id: 'quadratic_equation', name: 'Quadratic Equations', operation: MathOperation.quadraticEquation, iconAsset: 'asset/image/icon/algebra.webp', section: PracticeSection.miscellaneous),
-    QuizCategory(id: 'cubic_equation', name: 'Cubic Equations', operation: MathOperation.cubicEquation, iconAsset: 'asset/image/icon/algebra.webp', section: PracticeSection.miscellaneous),
-    QuizCategory(id: 'unit_digit', name: 'Unit Digit', operation: MathOperation.unitDigit, iconAsset: 'asset/image/icon/algebra.webp', section: PracticeSection.miscellaneous),
-    QuizCategory(id: 'powers', name: 'Powers & Indices', operation: MathOperation.powers, iconAsset: 'asset/image/icon/algebra.webp', section: PracticeSection.miscellaneous),
-    QuizCategory(id: 'equations', name: 'Equation Mix', operation: MathOperation.algebra, iconAsset: 'asset/image/icon/algebra.webp', section: PracticeSection.miscellaneous),
-    QuizCategory(id: 'miscellaneous_mix', name: 'Miscellaneous Mix', operation: MathOperation.miscellaneousMix, iconAsset: 'asset/image/icon/complexity.webp', section: PracticeSection.miscellaneous),
-  ];
-
-  static const List<QuizCategory> quickRecall = [
-    QuizCategory(id: 'square', name: 'Squares', operation: MathOperation.square, iconAsset: 'asset/image/icon/square.webp', isAdvanced: true, section: PracticeSection.quickRecall),
-    QuizCategory(id: 'cube', name: 'Cubes', operation: MathOperation.cube, iconAsset: 'asset/image/icon/cube.webp', isAdvanced: true, section: PracticeSection.quickRecall),
-    QuizCategory(id: 'sqrt', name: 'Square Roots', operation: MathOperation.squareRoot, iconAsset: 'asset/image/icon/sqareroot.webp', isAdvanced: true, section: PracticeSection.quickRecall),
-    QuizCategory(id: 'cbrt', name: 'Cube Roots', operation: MathOperation.cubeRoot, iconAsset: 'asset/image/icon/cuberoot.webp', isAdvanced: true, section: PracticeSection.quickRecall),
-    QuizCategory(id: 'table', name: 'Tables', operation: MathOperation.table, iconAsset: 'asset/image/icon/table.webp', isAdvanced: true, section: PracticeSection.quickRecall),
-    QuizCategory(id: 'exponents', name: 'Exponents', operation: MathOperation.exponents, iconAsset: 'asset/image/icon/algebra.webp', isAdvanced: true, section: PracticeSection.quickRecall),
-    QuizCategory(id: 'trigonometry', name: 'Trigonometry', operation: MathOperation.trigonometry, iconAsset: 'asset/image/icon/trigo.webp', isAdvanced: true, section: PracticeSection.quickRecall),
-    QuizCategory(id: 'percentage', name: 'Percentages', operation: MathOperation.percentage, iconAsset: 'asset/image/icon/percentage.webp', isAdvanced: true, section: PracticeSection.quickRecall),
-    QuizCategory(id: 'fraction', name: 'Fractions', operation: MathOperation.fraction, iconAsset: 'asset/image/icon/fraction.webp', isAdvanced: true, section: PracticeSection.quickRecall),
-    QuizCategory(id: 'di_addition', name: 'DI Addition', operation: MathOperation.diAddition, iconAsset: 'asset/image/icon/plus.webp', isAdvanced: true, section: PracticeSection.quickRecall),
-    QuizCategory(id: 'quick_recall_workout', name: 'Quick Recall Workout', operation: MathOperation.quickRecallWorkout, iconAsset: 'asset/image/icon/complexity.webp', isAdvanced: true, section: PracticeSection.quickRecall),
-  ];
-
-  static const List<QuizCategory> basics = [
-    QuizCategory(id: 'addition', name: 'Addition', operation: MathOperation.addition, iconAsset: 'asset/image/icon/plus.webp', section: PracticeSection.basics),
-    QuizCategory(id: 'subtraction', name: 'Subtraction', operation: MathOperation.subtraction, iconAsset: 'asset/image/icon/minus.webp', section: PracticeSection.basics),
-    QuizCategory(id: 'multiplication', name: 'Multiplication', operation: MathOperation.multiplication, iconAsset: 'asset/image/icon/multiply.webp', section: PracticeSection.basics),
-    QuizCategory(id: 'division', name: 'Division', operation: MathOperation.division, iconAsset: 'asset/image/icon/division.webp', section: PracticeSection.basics),
-    QuizCategory(id: 'complexity', name: 'Complexity Mix', operation: MathOperation.mixAdvance, iconAsset: 'asset/image/icon/complexity.webp', section: PracticeSection.basics),
-    QuizCategory(id: 'basics_workout', name: 'Basics Workout', operation: MathOperation.basicsWorkout, iconAsset: 'asset/image/icon/complexity.webp', section: PracticeSection.basics),
-  ];
-
-  static const List<QuizCategory> advanced = quickRecall;
+ const QuizCategory({required this.id,required this.name,required this.operation,required this.iconAsset,this.isAdvanced=false,this.section=PracticeSection.basics});
+ final String id,name,iconAsset; final MathOperation operation; final bool isAdvanced; final PracticeSection section;
+ static const basics=[
+  QuizCategory(id:'addition',name:'Addition',operation:MathOperation.addition,iconAsset:'asset/image/icon/plus.webp'),QuizCategory(id:'subtraction',name:'Subtraction',operation:MathOperation.subtraction,iconAsset:'asset/image/icon/minus.webp'),QuizCategory(id:'multiplication',name:'Multiplication',operation:MathOperation.multiplication,iconAsset:'asset/image/icon/multiply.webp'),QuizCategory(id:'division',name:'Division',operation:MathOperation.division,iconAsset:'asset/image/icon/division.webp'),QuizCategory(id:'percentage',name:'Percentages',operation:MathOperation.percentage,iconAsset:'asset/image/icon/percentage.webp',isAdvanced:true),QuizCategory(id:'fraction',name:'Fractions & Decimals',operation:MathOperation.fraction,iconAsset:'asset/image/icon/fraction.webp'),QuizCategory(id:'averages',name:'Averages',operation:MathOperation.averages,iconAsset:'asset/image/icon/complexity.webp'),QuizCategory(id:'ratio_proportion',name:'Ratio & Proportion',operation:MathOperation.ratioProportion,iconAsset:'asset/image/icon/complexity.webp'),QuizCategory(id:'number_system',name:'Number System',operation:MathOperation.numberSystem,iconAsset:'asset/image/icon/complexity.webp'),QuizCategory(id:'factors_multiples',name:'Factors, HCF & LCM',operation:MathOperation.factorsMultiples,iconAsset:'asset/image/icon/complexity.webp'),QuizCategory(id:'divisibility',name:'Divisibility',operation:MathOperation.divisibility,iconAsset:'asset/image/icon/complexity.webp'),
+ ];
+ static const quickRecall=[
+  QuizCategory(id:'square',name:'Squares',operation:MathOperation.square,iconAsset:'asset/image/icon/square.webp',isAdvanced:true,section:PracticeSection.quickRecall),QuizCategory(id:'cube',name:'Cubes',operation:MathOperation.cube,iconAsset:'asset/image/icon/cube.webp',isAdvanced:true,section:PracticeSection.quickRecall),QuizCategory(id:'sqrt',name:'Square Roots',operation:MathOperation.squareRoot,iconAsset:'asset/image/icon/sqareroot.webp',isAdvanced:true,section:PracticeSection.quickRecall),QuizCategory(id:'cbrt',name:'Cube Roots',operation:MathOperation.cubeRoot,iconAsset:'asset/image/icon/cuberoot.webp',isAdvanced:true,section:PracticeSection.quickRecall),QuizCategory(id:'table',name:'Tables',operation:MathOperation.table,iconAsset:'asset/image/icon/table.webp',isAdvanced:true,section:PracticeSection.quickRecall),QuizCategory(id:'exponents',name:'Exponents',operation:MathOperation.exponents,iconAsset:'asset/image/icon/algebra.webp',isAdvanced:true,section:PracticeSection.quickRecall),QuizCategory(id:'trigonometry',name:'Trigonometry',operation:MathOperation.trigonometry,iconAsset:'asset/image/icon/trigo.webp',isAdvanced:true,section:PracticeSection.quickRecall),QuizCategory(id:'unit_digit',name:'Unit Digit',operation:MathOperation.unitDigit,iconAsset:'asset/image/icon/algebra.webp',isAdvanced:true,section:PracticeSection.quickRecall),QuizCategory(id:'mental_multiplication',name:'Fast Multiplication',operation:MathOperation.mentalMultiplication,iconAsset:'asset/image/icon/multiply.webp',isAdvanced:true,section:PracticeSection.quickRecall),QuizCategory(id:'fast_division',name:'Fast Division',operation:MathOperation.fastDivision,iconAsset:'asset/image/icon/division.webp',isAdvanced:true,section:PracticeSection.quickRecall),
+ ];
+ static const miscellaneous=[
+  QuizCategory(id:'bodmas',name:'BODMAS',operation:MathOperation.bodmas,iconAsset:'asset/image/icon/complexity.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'simplification',name:'Simplification',operation:MathOperation.simplification,iconAsset:'asset/image/icon/complexity.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'series',name:'Number Series',operation:MathOperation.series,iconAsset:'asset/image/icon/complexity.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'sequences_patterns',name:'Advanced Patterns',operation:MathOperation.sequencesPatterns,iconAsset:'asset/image/icon/complexity.webp',isAdvanced:true,section:PracticeSection.miscellaneous),QuizCategory(id:'remainders',name:'Remainders',operation:MathOperation.remainders,iconAsset:'asset/image/icon/complexity.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'profit_loss',name:'Profit & Loss',operation:MathOperation.profitLossDiscount,iconAsset:'asset/image/icon/percentage.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'si_ci',name:'Simple & Compound Interest',operation:MathOperation.simpleCompoundInterest,iconAsset:'asset/image/icon/percentage.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'mixture',name:'Mixture & Alligation',operation:MathOperation.mixtureAlligation,iconAsset:'asset/image/icon/complexity.webp',isAdvanced:true,section:PracticeSection.miscellaneous),QuizCategory(id:'partnership',name:'Partnership',operation:MathOperation.partnership,iconAsset:'asset/image/icon/complexity.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'ages',name:'Ages',operation:MathOperation.ages,iconAsset:'asset/image/icon/complexity.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'time_work',name:'Time & Work',operation:MathOperation.timeWork,iconAsset:'asset/image/icon/complexity.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'pipes',name:'Pipes & Cisterns',operation:MathOperation.pipesCisterns,iconAsset:'asset/image/icon/complexity.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'speed_distance',name:'Speed, Distance & Time',operation:MathOperation.speedDistance,iconAsset:'asset/image/icon/stopwatch.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'trains',name:'Trains',operation:MathOperation.trains,iconAsset:'asset/image/icon/stopwatch.webp',isAdvanced:true,section:PracticeSection.miscellaneous),QuizCategory(id:'boats',name:'Boats & Streams',operation:MathOperation.boatsStreams,iconAsset:'asset/image/icon/stopwatch.webp',isAdvanced:true,section:PracticeSection.miscellaneous),QuizCategory(id:'ap',name:'Arithmetic Progression',operation:MathOperation.arithmeticProgression,iconAsset:'asset/image/icon/complexity.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'gp',name:'Geometric Progression',operation:MathOperation.geometricProgression,iconAsset:'asset/image/icon/complexity.webp',isAdvanced:true,section:PracticeSection.miscellaneous),QuizCategory(id:'quadratic_equation',name:'Quadratic Equations',operation:MathOperation.quadraticEquation,iconAsset:'asset/image/icon/algebra.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'polynomials',name:'Polynomials',operation:MathOperation.polynomials,iconAsset:'asset/image/icon/algebra.webp',isAdvanced:true,section:PracticeSection.miscellaneous),QuizCategory(id:'mensuration_2d',name:'2D Mensuration',operation:MathOperation.mensuration2d,iconAsset:'asset/image/icon/2d.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'mensuration_3d',name:'3D Mensuration',operation:MathOperation.mensuration3d,iconAsset:'asset/image/icon/3d.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'pythagorean',name:'Pythagorean',operation:MathOperation.pythagorean,iconAsset:'asset/image/icon/geometry.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'permutation_combination',name:'Permutations & Combinations',operation:MathOperation.permutationCombination,iconAsset:'asset/image/icon/complexity.webp',isAdvanced:true,section:PracticeSection.miscellaneous),QuizCategory(id:'probability',name:'Probability',operation:MathOperation.probability,iconAsset:'asset/image/icon/complexity.webp',isAdvanced:true,section:PracticeSection.miscellaneous),QuizCategory(id:'data_interpretation',name:'Data Interpretation',operation:MathOperation.dataInterpretation,iconAsset:'asset/image/icon/performance.webp',isAdvanced:true,section:PracticeSection.miscellaneous),QuizCategory(id:'statistics',name:'Statistics',operation:MathOperation.statistics,iconAsset:'asset/image/icon/performance.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'geometry',name:'Geometry',operation:MathOperation.geometryBasics,iconAsset:'asset/image/icon/geometry.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'linear_equation',name:'Linear Equations',operation:MathOperation.linearEquation,iconAsset:'asset/image/icon/algebra.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'cubic_equation',name:'Cubic Equations',operation:MathOperation.cubicEquation,iconAsset:'asset/image/icon/algebra.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'powers',name:'Powers & Indices',operation:MathOperation.powers,iconAsset:'asset/image/icon/algebra.webp',section:PracticeSection.miscellaneous),QuizCategory(id:'miscellaneous_mix',name:'Miscellaneous Mix',operation:MathOperation.miscellaneousMix,iconAsset:'asset/image/icon/complexity.webp',section:PracticeSection.miscellaneous),
+ ];
+ static const advanced=quickRecall;
 }
-
 enum PracticeSection { miscellaneous, quickRecall, basics }
