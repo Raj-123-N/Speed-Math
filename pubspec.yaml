@@ -1,8 +1,7 @@
 name: speed_math
 description: "Speed Math - Practice and master mental mathematics"
 publish_to: 'none'
-
-version: 0.1.0+1
+version: 0.2.0+2
 
 environment:
   sdk: ^3.13.1
@@ -10,9 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  speed_math_content:
+    path: packages/speed_math_content
   cupertino_icons: ^1.0.8
   lottie: ^3.1.0
+  audioplayers: ^6.5.0
   go_router: ^14.0.0
   provider: ^6.1.2
   shared_preferences: ^2.3.2
@@ -20,17 +21,21 @@ dependencies:
   http: ^1.2.2
   url_launcher: ^6.3.0
   package_info_plus: ^8.1.0
+  share_plus: ^10.1.4
+  in_app_review: ^2.0.9
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+  flutter_timezone: ^4.1.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+
 flutter:
   uses-material-design: true
-
   assets:
-    # Animations
     - asset/animation/battle_winner.json
     - asset/animation/chart_loader.json
     - asset/animation/live.json
@@ -39,8 +44,6 @@ flutter:
     - asset/animation/quiz_review.json
     - asset/animation/rank.json
     - asset/animation/search_people.json
-    # Fonts (image assets, not font declarations)
-    # Icons
     - asset/image/icon/2d.webp
     - asset/image/icon/3d.webp
     - asset/image/icon/algebra.webp
@@ -92,16 +95,13 @@ flutter:
     - asset/image/icon/trigo.webp
     - asset/image/icon/Vector.svg
     - asset/image/icon/wifi.webp
-    # Banners
     - asset/image/banner/quiz.webp
     - asset/image/banner/rate.webp
-    # Music
     - asset/music/bonus.aac
     - asset/music/end.aac
     - asset/music/lose.aac
     - asset/music/start.aac
     - asset/music/won.aac
-
   fonts:
     - family: Roboto
       fonts:
@@ -112,6 +112,7 @@ flutter:
           weight: 700
         - asset: asset/fonts/Roboto-Black.ttf
           weight: 900
+
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true

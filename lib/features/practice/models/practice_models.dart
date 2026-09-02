@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/quiz_category.dart';
 
-/// Shared settings for a repeatable Practice drill.
 enum PracticeInputMode { keyboard, mcq }
 enum PracticeTimeMode { limit, stopwatch }
 enum PracticeComplexity { easy, medium, hard }
@@ -76,18 +75,38 @@ class PracticeQuestion {
   bool get hasOptions => options.isNotEmpty;
 }
 
+class PracticeAnswerRecord {
+  const PracticeAnswerRecord({
+    required this.questionNumber,
+    required this.prompt,
+    required this.correctAnswer,
+    required this.userAnswer,
+    required this.correct,
+    required this.elapsed,
+  });
+
+  final int questionNumber;
+  final String prompt;
+  final String correctAnswer;
+  final String userAnswer;
+  final bool correct;
+  final Duration elapsed;
+}
+
 class PracticeResult {
   const PracticeResult({
     required this.total,
     required this.correct,
     required this.wrong,
     required this.elapsed,
+    this.answers = const [],
   });
 
   final int total;
   final int correct;
   final int wrong;
   final Duration elapsed;
+  final List<PracticeAnswerRecord> answers;
 
   double get accuracy => total == 0 ? 0 : correct / total;
 }

@@ -9,7 +9,6 @@ import 'practice_session_screen.dart';
 class PracticeSetupScreen extends StatefulWidget {
   const PracticeSetupScreen({super.key, required this.category});
   final QuizCategory category;
-
   @override
   State<PracticeSetupScreen> createState() => _PracticeSetupScreenState();
 }
@@ -28,10 +27,7 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
   int _valueStart = 1, _valueEnd = 100;
 
   @override
-  void initState() {
-    super.initState();
-    _pattern = _patternFor(widget.category.operation);
-  }
+  void initState() { super.initState(); _pattern = _patternFor(widget.category.operation); }
 
   static PracticePattern _patternFor(MathOperation op) {
     switch (op) {
@@ -61,88 +57,97 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
     final accent = practiceSectionColor(widget.category);
     return Scaffold(
       backgroundColor: dark ? AppColors.backgroundDark : const Color(0xFFF3F5F9),
-      appBar: AppBar(backgroundColor: dark ? AppColors.surfaceDark : Colors.white, surfaceTintColor: Colors.transparent, title: Text('Practice ${widget.category.name}', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800))),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-        children: [
-          _heroCard(accent, dark),
-          const SizedBox(height: 12),
-          if (_isDigitOperation) ...[_numberSettings(dark, accent), const SizedBox(height: 12)],
-          if (_isTables) ...[_tableSettings(dark, accent), const SizedBox(height: 12)],
-          if (_isRecall) ...[_recallSettings(dark, accent), const SizedBox(height: 12)],
-          if (!_isTables && !_isDigitOperation && !_isRecall) ...[_complexitySettings(dark, accent), const SizedBox(height: 12)],
-          if (_isRecall) ...[_complexitySettings(dark, accent), const SizedBox(height: 12)],
-          _commonSettings(dark, accent),
-          const SizedBox(height: 18),
-          PrimaryButton(label: 'Start Practice', icon: const Icon(Icons.play_arrow_rounded, color: Colors.white), onPressed: _start),
-        ],
-      ),
+      appBar: AppBar(backgroundColor: dark ? AppColors.surfaceDark : Colors.white, surfaceTintColor: Colors.transparent, title: Text('Plan Practice', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w900))),
+      body: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 120), children: [
+        _heroCard(accent, dark), const SizedBox(height: 12),
+        _planSummary(accent, dark), const SizedBox(height: 12),
+        if (_isDigitOperation) ...[_numberSettings(dark, accent), const SizedBox(height: 12)],
+        if (_isTables) ...[_tableSettings(dark, accent), const SizedBox(height: 12)],
+        if (_isRecall) ...[_recallSettings(dark, accent), const SizedBox(height: 12)],
+        if (!_isTables && !_isDigitOperation && !_isRecall) ...[_complexitySettings(dark, accent), const SizedBox(height: 12)],
+        if (_isRecall) ...[_complexitySettings(dark, accent), const SizedBox(height: 12)],
+        _commonSettings(dark, accent),
+        const SizedBox(height: 18),
+        PrimaryButton(label: 'Start Practice', icon: const Icon(Icons.play_arrow_rounded, color: Colors.white), onPressed: _start),
+      ]),
     );
   }
 
-  Widget _heroCard(Color accent, bool dark) => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(gradient: LinearGradient(colors: [accent.withValues(alpha: .18), accent.withValues(alpha: .05)]), borderRadius: BorderRadius.circular(20), border: Border.all(color: accent.withValues(alpha: .3))),
-    child: Row(children: [
-      Container(width: 52, height: 52, padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: accent.withValues(alpha: .14), borderRadius: BorderRadius.circular(15)), child: Image.asset(widget.category.iconAsset, errorBuilder: (_, _, _) => Icon(Icons.calculate_rounded, color: accent))),
-      const SizedBox(width: 14),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(widget.category.name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: dark ? Colors.white : const Color(0xFF172033))), const SizedBox(height: 4), Text('Practice this learned topic as many times as you want. Each session generates fresh drills.', style: TextStyle(color: dark ? Colors.white70 : Colors.black54))])),
-    ]),
-  );
+  Widget _heroCard(Color accent, bool dark) => Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(gradient: LinearGradient(colors: [accent.withValues(alpha: .18), accent.withValues(alpha: .05)]), borderRadius: BorderRadius.circular(20), border: Border.all(color: accent.withValues(alpha: .3))), child: Row(children: [
+    Container(width: 52, height: 52, padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: accent.withValues(alpha: .14), borderRadius: BorderRadius.circular(15)), child: Image.asset(widget.category.iconAsset, errorBuilder: (_, _, _) => Icon(Icons.calculate_rounded, color: accent))),
+    const SizedBox(width: 14),
+    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(widget.category.name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: dark ? Colors.white : const Color(0xFF172033))), const SizedBox(height: 4), Text(_topicDescription(), style: TextStyle(color: dark ? Colors.white70 : Colors.black54))])),
+  ]));
+
+  String _topicDescription() {
+    switch (widget.category.operation) {
+      case MathOperation.table: return 'Target a single table or a range. Sequential mode completes every multiplier in order; random mode samples the selected tables.';
+      case MathOperation.square: return 'Practice square recall across the value range you choose.';
+      case MathOperation.cube: return 'Practice cube recall across the value range you choose.';
+      case MathOperation.squareRoot: return 'Practice exact square-root recall from generated perfect squares.';
+      case MathOperation.cubeRoot: return 'Practice exact cube-root recall from generated perfect cubes.';
+      case MathOperation.percentage: return 'Practice percentage calculations with difficulty-scaled percentage patterns.';
+      case MathOperation.fraction: return 'Convert common fractions to decimals with progressively harder sets.';
+      default: return 'Repeat this learned topic with a focused plan. Every session is independent and repeatable.';
+    }
+  }
+
+  Widget _planSummary(Color accent, bool dark) => Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: dark ? AppColors.cardDark : Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: accent.withValues(alpha: .2))), child: Row(children: [Icon(Icons.route_rounded, color: accent), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Your plan', style: TextStyle(fontWeight: FontWeight.w900, color: accent)), const SizedBox(height: 3), Text(_planText(), style: const TextStyle(fontWeight: FontWeight.w700)), const SizedBox(height: 2), Text('${_questions} questions • ${_timeMode == PracticeTimeMode.stopwatch ? 'Stopwatch' : _timeLabel()} • ${_input == PracticeInputMode.keyboard ? 'Keyboard' : 'MCQ'}', style: TextStyle(fontSize: 12, color: dark ? Colors.white60 : Colors.black54))]))]));
+
+  String _planText() {
+    if (_isTables) return _tableStart == _tableEnd ? 'Table $_tableStart • ${_tableOrder == TableOrder.sequential ? '1×$_multiplier in order' : 'random multipliers'}' : 'Tables $_tableStart–$_tableEnd • ${_tableOrder == TableOrder.sequential ? 'complete sequence' : 'random sampling'}';
+    if (_isDigitOperation) return '${_isArithmetic ? 'Arithmetic' : widget.category.name} • $_lhs–$_rhs digit numbers';
+    if (_isRecall) return '${widget.category.name} • values $_valueStart–$_valueEnd';
+    return '${widget.category.name} • ${complexityLabel(_complexity)} difficulty';
+  }
 
   Widget _numberSettings(bool dark, Color accent) => _section(dark, accent, 'Number structure', [
-    _stepper('LHS digits', _lhs, 1, 5, (v) => setState(() => _lhs = v)),
-    _stepper('RHS digits', _rhs, 1, 5, (v) => setState(() => _rhs = v)),
-    if (_isArithmetic) _stepper('Number of terms', _terms, 2, 6, (v) => setState(() => _terms = v)),
+    _stepper('Left-hand digits', _lhs, 1, 5, (v) => setState(() => _lhs = v)),
+    _stepper('Right-hand digits', _rhs, 1, 5, (v) => setState(() => _rhs = v)),
+    if (_isArithmetic) _stepper('Terms per question', _terms, 2, 6, (v) => setState(() => _terms = v)),
+    _info('Higher digits increase calculation load. Use Easy/Medium/Hard below to control the wider topic difficulty.'),
   ]);
 
-  Widget _tableSettings(bool dark, Color accent) => _section(dark, accent, 'Table drill', [
-    _rangeRow('Tables', _tableStart, _tableEnd, '1–100 tables', 100, (a, b) => setState(() { _tableStart = a; _tableEnd = b; })),
+  Widget _tableSettings(bool dark, Color accent) => _section(dark, accent, 'Table target', [
+    _choiceRow('Quick target', ['Table 2', 'Table 5', 'Table 10', '1–10'], _tablePreset(), (v) {
+      setState(() { if (v == 'Table 2') { _tableStart = 2; _tableEnd = 2; } else if (v == 'Table 5') { _tableStart = 5; _tableEnd = 5; } else if (v == 'Table 10') { _tableStart = 10; _tableEnd = 10; } else { _tableStart = 1; _tableEnd = 10; } });
+    }),
+    _rangeRow('Custom tables', _tableStart, _tableEnd, 'Choose any table 1–100', 100, (a, b) => setState(() { _tableStart = a; _tableEnd = b; })),
     _choiceRow('Multipliers', ['10', '20'], _multiplier == 10 ? '10' : '20', (v) => setState(() => _multiplier = int.parse(v))),
-    _choiceRow('Order', ['Sequential', 'Random'], _tableOrder == TableOrder.sequential ? 'Sequential' : 'Random', (v) => setState(() => _tableOrder = v == 'Sequential' ? TableOrder.sequential : TableOrder.random)),
-    if (_tableOrder == TableOrder.sequential) _switchRow('Shuffle sequence', _shuffleSequential, (v) => setState(() => _shuffleSequential = v)),
+    _choiceRow('Question order', ['Sequential', 'Random'], _tableOrder == TableOrder.sequential ? 'Sequential' : 'Random', (v) => setState(() => _tableOrder = v == 'Sequential' ? TableOrder.sequential : TableOrder.random)),
+    if (_tableOrder == TableOrder.sequential) _switchRow('Shuffle full sequence', _shuffleSequential, (v) => setState(() => _shuffleSequential = v)),
+    _info(_tableOrder == TableOrder.sequential ? 'Sequential means every selected table/multiplier pair is generated systematically. For Table 2, questions progress 2×1, 2×2, 2×3 …' : 'Random means both the selected table and multiplier are sampled inside your chosen target.'),
   ]);
+
+  String _tablePreset() => _tableStart == 2 && _tableEnd == 2 ? 'Table 2' : _tableStart == 5 && _tableEnd == 5 ? 'Table 5' : _tableStart == 10 && _tableEnd == 10 ? 'Table 10' : _tableStart == 1 && _tableEnd == 10 ? '1–10' : '';
 
   Widget _recallSettings(bool dark, Color accent) => _section(dark, accent, 'Recall range', [
-    _rangeRow('Values', _valueStart, _valueEnd, '1–1000 values', 1000, (a, b) => setState(() { _valueStart = a; _valueEnd = b; })),
+    _rangeRow('Values', _valueStart, _valueEnd, 'Choose the numbers you want to recall', 1000, (a, b) => setState(() { _valueStart = a; _valueEnd = b; })),
+    _info('Keep the range small when building a new memory set. Expand it after repeated successful sessions.'),
   ]);
 
   Widget _complexitySettings(bool dark, Color accent) => _section(dark, accent, 'Difficulty', [
     _choiceRow('Complexity', ['Easy', 'Medium', 'Hard'], complexityLabel(_complexity), (v) => setState(() => _complexity = PracticeComplexity.values.firstWhere((e) => complexityLabel(e) == v))),
   ]);
 
-  Widget _commonSettings(bool dark, Color accent) => _section(dark, accent, 'Session', [
-    _stepper('Questions', _questions, 5, 100, (v) => setState(() => _questions = v)),
-    _choiceRow('Timer', ['1 min', '5 min', '15 min', '30 min', '60 min', 'Stopwatch'], _timeLabel(), (v) => setState(() { _timeMode = v == 'Stopwatch' ? PracticeTimeMode.stopwatch : PracticeTimeMode.limit; _seconds = {'1 min':60,'5 min':300,'15 min':900,'30 min':1800,'60 min':3600}[v] ?? 60; })),
-    _choiceRow('Answer mode', ['Keyboard', 'MCQ'], _input == PracticeInputMode.keyboard ? 'Keyboard' : 'MCQ', (v) => setState(() => _input = v == 'Keyboard' ? PracticeInputMode.keyboard : PracticeInputMode.mcq)),
-    if (_input == PracticeInputMode.keyboard) _switchRow('Auto-submit answers', _autoSubmit, (v) => setState(() => _autoSubmit = v)),
-    if (_input == PracticeInputMode.keyboard && _autoSubmit) _switchRow('Quick submit', _quickSubmit, (v) => setState(() => _quickSubmit = v)),
+  Widget _commonSettings(bool dark, Color accent) => _section(dark, accent, 'Session controls', [
+    _stepper('Number of questions', _questions, 5, 100, (v) => setState(() => _questions = v)),
+    _choiceRow('Quick count', ['10', '20', '30', '50', '100'], ['10','20','30','50','100'].contains('$_questions') ? '$_questions' : '', (v) => setState(() => _questions = int.parse(v))),
+    _choiceRow('Time', ['30 sec', '1 min', '3 min', '5 min', '10 min', '15 min', 'Stopwatch'], _timeLabel(), (v) => setState(() { _timeMode = v == 'Stopwatch' ? PracticeTimeMode.stopwatch : PracticeTimeMode.limit; _seconds = {'30 sec':30,'1 min':60,'3 min':180,'5 min':300,'10 min':600,'15 min':900}[v] ?? 60; })),
+    _choiceRow('Answer input', ['Keyboard', 'MCQ'], _input == PracticeInputMode.keyboard ? 'Keyboard' : 'MCQ', (v) => setState(() => _input = v == 'Keyboard' ? PracticeInputMode.keyboard : PracticeInputMode.mcq)),
+    if (_input == PracticeInputMode.keyboard) _switchRow('Auto-submit exact answers', _autoSubmit, (v) => setState(() => _autoSubmit = v)),
+    if (_input == PracticeInputMode.keyboard && _autoSubmit) _switchRow('Fast transition', _quickSubmit, (v) => setState(() => _quickSubmit = v)),
+    _info('For speed training, use 20–30 questions first. Increase the question count or reduce the timer only after accuracy is stable.'),
   ]);
 
-  String _timeLabel() => _timeMode == PracticeTimeMode.stopwatch ? 'Stopwatch' : const {60:'1 min',300:'5 min',900:'15 min',1800:'30 min',3600:'60 min'}[_seconds] ?? '1 min';
+  String _timeLabel() => _timeMode == PracticeTimeMode.stopwatch ? 'Stopwatch' : const {'30 sec':'30 sec','1 min':'1 min','3 min':'3 min','5 min':'5 min','10 min':'10 min','15 min':'15 min'}[_seconds == 30 ? '30 sec' : _seconds == 60 ? '1 min' : _seconds == 180 ? '3 min' : _seconds == 300 ? '5 min' : _seconds == 600 ? '10 min' : '15 min'] ?? '1 min';
 
-  Widget _section(bool dark, Color accent, String title, List<Widget> children) => Container(
-    padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-    decoration: BoxDecoration(color: dark ? AppColors.cardDark : Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: dark ? AppColors.borderDark : AppColors.borderLight)),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontWeight: FontWeight.w900, color: accent, letterSpacing: .3)), const SizedBox(height: 4), ...children]),
-  );
-
+  Widget _section(bool dark, Color accent, String title, List<Widget> children) => Container(padding: const EdgeInsets.fromLTRB(14, 12, 14, 8), decoration: BoxDecoration(color: dark ? AppColors.cardDark : Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: dark ? AppColors.borderDark : AppColors.borderLight)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontWeight: FontWeight.w900, color: accent, letterSpacing: .3)), const SizedBox(height: 4), ...children]));
+  Widget _info(String text) => Padding(padding: const EdgeInsets.fromLTRB(4, 6, 4, 8), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.info_outline_rounded, size: 16, color: Colors.grey), const SizedBox(width: 7), Expanded(child: Text(text, style: const TextStyle(fontSize: 11.5, color: Colors.grey)))]));
   Widget _stepper(String label, int value, int min, int max, ValueChanged<int> onChanged) => ListTile(contentPadding: EdgeInsets.zero, title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(onPressed: value > min ? () => onChanged(value - 1) : null, icon: const Icon(Icons.remove_circle_outline_rounded)), SizedBox(width: 34, child: Center(child: Text('$value', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)))), IconButton(onPressed: value < max ? () => onChanged(value + 1) : null, icon: const Icon(Icons.add_circle_outline_rounded))]));
-
-  Widget _rangeRow(String label, int a, int b, String subtitle, int maxValue, void Function(int, int) onChanged) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-    subtitle: Text(subtitle),
-    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-      _smallField(a, (v) => onChanged(v.clamp(1, b).toInt(), b)),
-      const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text('to')),
-      _smallField(b, (v) => onChanged(a, v.clamp(a, maxValue).toInt())),
-    ]),
-  );
-
-  Widget _smallField(int value, ValueChanged<int> onChanged) => SizedBox(width: 58, child: TextFormField(initialValue: '$value', textAlign: TextAlign.center, keyboardType: TextInputType.number, decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()), onFieldSubmitted: (v) { final n = int.tryParse(v); if (n != null) onChanged(n); }));
-
-  Widget _choiceRow(String label, List<String> values, String selected, ValueChanged<String> onChanged) => Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Row(children: [Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700))), Wrap(spacing: 6, children: values.map((v) => ChoiceChip(label: Text(v), selected: v == selected, onSelected: (_) => onChanged(v))).toList())]));
+  Widget _rangeRow(String label, int a, int b, String subtitle, int maxValue, void Function(int, int) onChanged) => ListTile(contentPadding: EdgeInsets.zero, title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(subtitle), trailing: Row(mainAxisSize: MainAxisSize.min, children: [_smallField(a, (v) => onChanged(v.clamp(1, b).toInt(), b)), const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text('to')), _smallField(b, (v) => onChanged(a, v.clamp(a, maxValue).toInt()))]));
+  Widget _smallField(int value, ValueChanged<int> onChanged) => SizedBox(width: 58, child: TextFormField(key: ValueKey(value), initialValue: '$value', textAlign: TextAlign.center, keyboardType: TextInputType.number, decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()), onFieldSubmitted: (v) { final n = int.tryParse(v); if (n != null) onChanged(n); }));
+  Widget _choiceRow(String label, List<String> values, String selected, ValueChanged<String> onChanged) => Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontWeight: FontWeight.w700)), const SizedBox(height: 7), Wrap(spacing: 6, runSpacing: 6, children: values.map((v) => ChoiceChip(label: Text(v), selected: v == selected, onSelected: (_) => onChanged(v))).toList())]));
   Widget _switchRow(String label, bool value, ValueChanged<bool> onChanged) => SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)), value: value, onChanged: onChanged);
 
   void _start() {

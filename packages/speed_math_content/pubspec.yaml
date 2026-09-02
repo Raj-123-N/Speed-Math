@@ -1,0 +1,7 @@
+name: speed_math_content
+description: Shared curriculum and content contracts for Speed Math user and admin apps.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.13.1
