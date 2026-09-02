@@ -37,7 +37,6 @@ class NotificationService {
 
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.requestNotificationsPermission();
-    await _plugin.resolvePlatformSpecificImplementation<DarwinInitializationSettings>();
 
     const channel = AndroidNotificationChannel(
       _channelId,
