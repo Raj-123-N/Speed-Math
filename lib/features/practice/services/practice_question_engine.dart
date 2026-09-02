@@ -150,21 +150,32 @@ class PracticeQuestionEngine {
   PracticeQuestion _tables(PracticeConfig c) {
     final start = min(c.tableStart, c.tableEnd).clamp(1, 100);
     final end = max(c.tableStart, c.tableEnd).clamp(1, 100);
-    final key = '${c.category.id}:$start-$end:${c.multiplierMax}:${c.tableOrder}:${c.shuffleSequential}';
-    int table;
+    final maxMultiplier = c.multiplierMax.clamp(1, 20);
+    final key = '${c.category.id}:$start-$end:$maxMultiplier:${c.tableOrder}:${c.shuffleSequential}';
+
+    late final int table;
+    late final int multiplier;
+
     if (c.tableOrder == TableOrder.sequential) {
+      // Sequential mode walks the complete Cartesian product of table numbers
+      // and multipliers before repeating. This makes practice predictable and
+      // ensures a table range such as 2–3 with ×1–2 yields 2×1, 2×2, 3×1, 3×2.
       final order = _tableOrders.putIfAbsent(key, () {
-        final list = List.generate(end - start + 1, (i) => start + i);
+        final pairCount = (end - start + 1) * maxMultiplier;
+        final list = List.generate(pairCount, (index) => index);
         if (c.shuffleSequential) list.shuffle(_random);
         return list;
       });
       final cursor = _tableCursor[key] ?? 0;
-      table = order[cursor % order.length];
+      final pair = order[cursor % order.length];
       _tableCursor[key] = cursor + 1;
+      table = start + pair ~/ maxMultiplier;
+      multiplier = pair % maxMultiplier + 1;
     } else {
       table = _between(start, end);
+      multiplier = _between(1, maxMultiplier);
     }
-    final multiplier = _between(1, c.multiplierMax.clamp(1, 20));
+
     return _numeric('$table × $multiplier = ?', table * multiplier);
   }
 
