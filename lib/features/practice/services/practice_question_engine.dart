@@ -6,6 +6,7 @@ class PracticeQuestionEngine {
   PracticeQuestionEngine({Random? random}) : _random = random ?? Random();
   final Random _random;
   final List<String> _recent = [];
+  final Map<String,int> _tableCursor = {};
 
   PracticeQuestion next(PracticeConfig c) {
     var q = _generate(c); var guard = 0;
@@ -21,7 +22,7 @@ class PracticeQuestionEngine {
   PracticeQuestion _arithmetic(PracticeConfig c){final n=c.terms.clamp(2,6).toInt(),v=List.generate(n,(_)=>_number(c.rhsDigits));if(c.category.operation==MathOperation.subtraction){v[0]=_number(c.lhsDigits);for(var i=1;i<n;i++)v[i]=min(v[i],max(1,v[0]~/n));return _numeric('${v.join(' − ')} = ?',v[0]-v.skip(1).fold(0,(a,b)=>a+b));}return _numeric('${v.join(' + ')} = ?',v.fold(0,(a,b)=>a+b));}
   PracticeQuestion _multiply(PracticeConfig c){final a=_number(c.lhsDigits),b=_number(c.rhsDigits);return _numeric('$a × $b = ?',a*b);}
   PracticeQuestion _divide(PracticeConfig c){final d=_number(c.rhsDigits),q=_number(c.lhsDigits);return _numeric('${d*q} ÷ $d = ?',q);}
-  PracticeQuestion _tables(PracticeConfig c){final a=min(c.tableStart,c.tableEnd).clamp(1,100).toInt(),b=max(c.tableStart,c.tableEnd).clamp(1,100).toInt(),t=_between(a,b),m=_between(1,c.multiplierMax.clamp(1,20).toInt());return _numeric('$t × $m = ?',t*m);}
+  PracticeQuestion _tables(PracticeConfig c){final start=min(c.tableStart,c.tableEnd).clamp(1,100).toInt(),end=max(c.tableStart,c.tableEnd).clamp(1,100).toInt(),maxM=c.multiplierMax.clamp(1,20).toInt(),key='${c.category.id}:$start-$end:$maxM:${c.tableOrder}:${c.shuffleSequential}';if(c.tableOrder==TableOrder.random){final t=_between(start,end),m=_between(1,maxM);return _numeric('$t × $m = ?',t*m);}final cursor=_tableCursor[key]??0;final total=(end-start+1)*maxM;final pair=cursor%total;final t=start+(pair~/maxM);final m=1+(pair%maxM);_tableCursor[key]=cursor+1;return _numeric('$t × $m = ?',t*m);}
   PracticeQuestion _recall(PracticeConfig c){final n=_between(c.valueStart.clamp(1,1000),c.valueEnd.clamp(1,1000));switch(c.category.operation){case MathOperation.square:return _numeric('$n² = ?',n*n);case MathOperation.cube:return _numeric('$n³ = ?',n*n*n);case MathOperation.squareRoot:return _numeric('√${n*n} = ?',n);case MathOperation.cubeRoot:return _numeric('∛${n*n*n} = ?',n);case MathOperation.percentage:return _percentage();case MathOperation.fraction:return _fraction();default:return _topic(c);}}
   PracticeQuestion _percentage(){final p=[5,10,20,25,50][_random.nextInt(5)],n=_between(10,100)*10;return _numeric('$p% of $n = ?',n*p/100);}
   PracticeQuestion _fraction(){const p={'1/2':'0.5','1/4':'0.25','3/4':'0.75','3/8':'0.375','5/8':'0.625','7/10':'0.7'};final k=p.keys.elementAt(_random.nextInt(p.length));return PracticeQuestion(prompt:'$k = decimal ?',answer:p[k]!,options:_options(p[k]!),inputHint:'Decimal');}
