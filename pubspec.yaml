@@ -21,6 +21,10 @@ dependencies:
   http: ^1.2.2
   url_launcher: ^6.3.0
   package_info_plus: ^8.1.0
+  share_plus: ^10.1.4
+  in_app_review: ^2.0.9
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:
@@ -107,11 +111,11 @@ flutter:
     - family: Roboto
       fonts:
         - asset: asset/fonts/Roboto-Regular.ttf
-        - asset: asset/fonts/Roboto-Medium.ttf
+        - asset/fonts/Roboto-Medium.ttf
           weight: 500
-        - asset: asset/fonts/Roboto-Bold.ttf
+        - asset/fonts/Roboto-Bold.ttf
           weight: 700
-        - asset: asset/fonts/Roboto-Black.ttf
+        - asset/fonts/Roboto-Black.ttf
           weight: 900
 flutter_launcher_icons:
   android: "launcher_icon"
