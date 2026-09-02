@@ -1,14 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/core/models/quiz_category.dart';
-import '../lib/features/practice/models/practice_models.dart';
-import '../lib/features/practice/services/practice_question_engine.dart';
+import 'package:speed_math/core/models/quiz_category.dart';
+import 'package:speed_math/features/practice/models/practice_models.dart';
+import 'package:speed_math/features/practice/services/practice_question_engine.dart';
 
 void main() {
-  const tableCategory = QuizCategory.quickRecall[4];
+  final tableCategory = QuizCategory.quickRecall[4];
 
   test('Table 2 sequential practice walks multipliers in order', () {
     final engine = PracticeQuestionEngine();
-    const config = PracticeConfig(
+    final config = PracticeConfig(
       category: tableCategory,
       pattern: PracticePattern.tables,
       questions: 10,
@@ -36,7 +36,7 @@ void main() {
 
   test('Sequential range completes table pairs before repeating', () {
     final engine = PracticeQuestionEngine();
-    const config = PracticeConfig(
+    final config = PracticeConfig(
       category: tableCategory,
       pattern: PracticePattern.tables,
       tableStart: 2,
