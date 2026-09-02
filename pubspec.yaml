@@ -1,8 +1,7 @@
 name: speed_math
 description: "Speed Math - Practice and master mental mathematics"
 publish_to: 'none'
-
-version: 0.1.0+1
+version: 0.2.0+2
 
 environment:
   sdk: ^3.13.1
@@ -10,7 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  speed_math_content:
+    path: packages/speed_math_content
   cupertino_icons: ^1.0.8
   lottie: ^3.1.0
   audioplayers: ^6.5.0
@@ -35,9 +35,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
   assets:
-    # Animations
     - asset/animation/battle_winner.json
     - asset/animation/chart_loader.json
     - asset/animation/live.json
@@ -46,7 +44,6 @@ flutter:
     - asset/animation/quiz_review.json
     - asset/animation/rank.json
     - asset/animation/search_people.json
-    # Icons
     - asset/image/icon/2d.webp
     - asset/image/icon/3d.webp
     - asset/image/icon/algebra.webp
@@ -98,16 +95,13 @@ flutter:
     - asset/image/icon/trigo.webp
     - asset/image/icon/Vector.svg
     - asset/image/icon/wifi.webp
-    # Banners
     - asset/image/banner/quiz.webp
     - asset/image/banner/rate.webp
-    # Music
     - asset/music/bonus.aac
     - asset/music/end.aac
     - asset/music/lose.aac
     - asset/music/start.aac
     - asset/music/won.aac
-
   fonts:
     - family: Roboto
       fonts:
