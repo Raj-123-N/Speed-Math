@@ -71,15 +71,19 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> with Sing
       _finish();
       return;
     }
-    if (widget.config.timeMode == PracticeTimeMode.limit) setState(() => _remaining--);
-    else setState(() {});
+    if (widget.config.timeMode == PracticeTimeMode.limit) {
+      setState(() => _remaining--);
+    } else {
+      setState(() {});
+    }
   }
 
   bool _matches(String raw, String expected) {
     final normalized = raw.trim().replaceAll(' ', '').toLowerCase();
     final target = expected.trim().replaceAll(' ', '').toLowerCase();
     if (normalized == target) return true;
-    final a = double.tryParse(normalized), b = double.tryParse(target);
+    final a = double.tryParse(normalized);
+    final b = double.tryParse(target);
     return a != null && b != null && (a - b).abs() < 0.0000001;
   }
 
@@ -87,20 +91,34 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> with Sing
     if (_locked || _finishing || raw.trim().isEmpty) return;
     final ok = _matches(raw, _question.answer);
     final elapsed = DateTime.now().difference(_questionStarted);
-    final record = PracticeAnswerRecord(questionNumber: _index + 1, prompt: _question.prompt, correctAnswer: _question.answer, userAnswer: raw.trim(), correct: ok, elapsed: elapsed);
+    final record = PracticeAnswerRecord(
+      questionNumber: _index + 1,
+      prompt: _question.prompt,
+      correctAnswer: _question.answer,
+      userAnswer: raw.trim(),
+      correct: ok,
+      elapsed: elapsed,
+    );
     setState(() {
       _locked = true;
       _lastCorrect = ok;
       _answers.add(record);
-      if (ok) _correct++; else _wrong++;
+      if (ok) {
+        _correct++;
+      } else {
+        _wrong++;
+      }
     });
     if (_animationsEnabled) {
       await _feedbackController.reverse();
       if (!mounted) return;
       await _feedbackController.forward();
     }
-    if (ok) await _feedback.correct(); else await _feedback.incorrect();
-
+    if (ok) {
+      await _feedback.correct();
+    } else {
+      await _feedback.incorrect();
+    }
     final delay = Duration(milliseconds: widget.config.quickSubmit ? 220 : 480);
     await Future.delayed(_animationsEnabled ? delay : const Duration(milliseconds: 120));
     if (!mounted || _finishing) return;
@@ -124,15 +142,34 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> with Sing
     _finishing = true;
     _timer?.cancel();
     final elapsed = DateTime.now().difference(_started);
-    final result = PracticeResult(total: _answers.length, correct: _correct, wrong: _wrong, elapsed: elapsed, answers: List.unmodifiable(_answers));
-    await _progress.recordSession(topicId: widget.config.category.id, topicName: widget.config.category.name, questions: result.total, correct: result.correct, elapsed: result.elapsed);
+    final result = PracticeResult(
+      total: _answers.length,
+      correct: _correct,
+      wrong: _wrong,
+      elapsed: elapsed,
+      answers: List.unmodifiable(_answers),
+    );
+    await _progress.recordSession(
+      topicId: widget.config.category.id,
+      topicName: widget.config.category.name,
+      questions: result.total,
+      correct: result.correct,
+      elapsed: result.elapsed,
+    );
     await _feedback.complete(result.correct > 0 && result.correct >= result.wrong);
     if (!mounted) return;
-    Navigator.pushReplacement(context, PageRouteBuilder(
-      transitionDuration: _animationsEnabled ? const Duration(milliseconds: 360) : Duration.zero,
-      pageBuilder: (_, animation, __) => PracticeResultScreen(result: result, config: widget.config),
-      transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut), child: child),
-    ));
+    Navigator.of(context).pushReplacement<void>(
+      PageRouteBuilder<void>(
+        transitionDuration: _animationsEnabled ? const Duration(milliseconds: 360) : Duration.zero,
+        pageBuilder: (context, animation, secondaryAnimation) => PracticeResultScreen(result: result, config: widget.config),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+            child: child,
+          );
+        },
+      ),
+    );
   }
 
   bool get _numericInput {
@@ -164,7 +201,9 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> with Sing
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final accent = practiceSectionColor(widget.config.category);
-    final time = widget.config.timeMode == PracticeTimeMode.stopwatch ? DateTime.now().difference(_started) : Duration(seconds: _remaining);
+    final time = widget.config.timeMode == PracticeTimeMode.stopwatch
+        ? DateTime.now().difference(_started)
+        : Duration(seconds: _remaining);
     final remainingQuestions = max(0, widget.config.questions - (_index + 1));
     final progress = widget.config.questions == 0 ? 0.0 : (_index + 1) / widget.config.questions;
 
@@ -173,85 +212,197 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> with Sing
       appBar: AppBar(
         backgroundColor: dark ? AppColors.surfaceDark : Colors.white,
         surfaceTintColor: Colors.transparent,
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(widget.config.category.name, style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w900)), Text('Question ${_index + 1} of ${widget.config.questions}', style: TextStyle(fontSize: 11, color: dark ? Colors.white54 : Colors.black45))]),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.config.category.name, style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w900)),
+            Text('Question ${_index + 1} of ${widget.config.questions}', style: TextStyle(fontSize: 11, color: dark ? Colors.white54 : Colors.black45)),
+          ],
+        ),
         actions: [IconButton(tooltip: 'End Practice', onPressed: _finish, icon: const Icon(Icons.close_rounded))],
       ),
-      body: SafeArea(child: Column(children: [
-        Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 8), child: Row(children: [
-          _metric(Icons.timer_outlined, _format(time), accent),
-          const SizedBox(width: 8),
-          _metric(Icons.check_circle_outline_rounded, '$_correct correct', Colors.green),
-          const Spacer(),
-          _metric(Icons.format_list_numbered_rounded, '$remainingQuestions left', accent),
-        ])),
-        TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: progress), duration: _duration(320), curve: Curves.easeOutCubic, builder: (_, value, __) => LinearProgressIndicator(value: value, minHeight: 5, color: accent, backgroundColor: accent.withValues(alpha: .12))),
-        Expanded(child: ListView(padding: const EdgeInsets.fromLTRB(16, 24, 16, 28), children: [
-          Row(children: [Expanded(child: Text(_planLabel(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: accent))), Text(_format(time), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: accent))]),
-          const SizedBox(height: 12),
-          AnimatedSwitcher(duration: _duration(180), transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: SlideTransition(position: Tween(begin: const Offset(.08, 0), end: Offset.zero).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)), child: child)), child: Text('PRACTICE ${_index + 1}', key: ValueKey(_index), style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.4, color: accent))),
-          const SizedBox(height: 14),
-          ScaleTransition(scale: _feedbackController, child: AnimatedContainer(duration: _duration(180), padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 32), decoration: BoxDecoration(color: dark ? AppColors.cardDark : Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: _lastCorrect == null ? accent.withValues(alpha: .25) : (_lastCorrect! ? Colors.green : Colors.red).withValues(alpha: .5), width: _lastCorrect == null ? 1 : 2), boxShadow: [BoxShadow(blurRadius: 18, color: (_lastCorrect == null ? accent : (_lastCorrect! ? Colors.green : Colors.red)).withValues(alpha: .08))]), child: Center(child: AnimatedSwitcher(duration: _duration(180), child: Text(_question.prompt, key: ValueKey(_question.prompt), textAlign: TextAlign.center, style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: dark ? Colors.white : const Color(0xFF162033))))))),
-          const SizedBox(height: 24),
-          if (widget.config.inputMode == PracticeInputMode.mcq && _question.hasOptions) _buildMcq(accent) else _buildKeyboard(accent, dark),
-          const SizedBox(height: 18),
-          AnimatedSwitcher(duration: _duration(160), child: _locked ? Center(key: const ValueKey('feedback'), child: Text(_lastCorrect == true ? 'Correct ✓' : 'Answer: ${_question.answer}', style: TextStyle(fontWeight: FontWeight.w900, color: _lastCorrect == true ? Colors.green : Colors.red))) : const SizedBox(key: ValueKey('empty'))),
-        ])),
-      ])),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: Row(
+                children: [
+                  _metric(Icons.timer_outlined, _format(time), accent),
+                  const SizedBox(width: 8),
+                  _metric(Icons.check_circle_outline_rounded, '$_correct correct', Colors.green),
+                  const Spacer(),
+                  _metric(Icons.format_list_numbered_rounded, '$remainingQuestions left', accent),
+                ],
+              ),
+            ),
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: progress),
+              duration: _duration(320),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) => LinearProgressIndicator(
+                value: value,
+                minHeight: 5,
+                color: accent,
+                backgroundColor: accent.withValues(alpha: .12),
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 28),
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: Text(_planLabel(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: accent))),
+                      Text(_format(time), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: accent)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text('PRACTICE ${_index + 1}', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.4, color: accent)),
+                  const SizedBox(height: 14),
+                  ScaleTransition(
+                    scale: _feedbackController,
+                    child: AnimatedContainer(
+                      duration: _duration(180),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 32),
+                      decoration: BoxDecoration(
+                        color: dark ? AppColors.cardDark : Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: _lastCorrect == null
+                              ? accent.withValues(alpha: .25)
+                              : (_lastCorrect! ? Colors.green : Colors.red).withValues(alpha: .5),
+                          width: _lastCorrect == null ? 1 : 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          _question.prompt,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: dark ? Colors.white : const Color(0xFF162033)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (widget.config.inputMode == PracticeInputMode.mcq && _question.hasOptions)
+                    _buildMcq(accent)
+                  else
+                    _buildKeyboard(accent, dark),
+                  const SizedBox(height: 18),
+                  if (_locked)
+                    Center(
+                      child: Text(
+                        _lastCorrect == true ? 'Correct ✓' : 'Answer: ${_question.answer}',
+                        style: TextStyle(fontWeight: FontWeight.w900, color: _lastCorrect == true ? Colors.green : Colors.red),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   String _planLabel() {
     if (widget.config.pattern == PracticePattern.tables) {
-      final range = widget.config.tableStart == widget.config.tableEnd ? 'Table ${widget.config.tableStart}' : 'Tables ${widget.config.tableStart}–${widget.config.tableEnd}';
+      final range = widget.config.tableStart == widget.config.tableEnd
+          ? 'Table ${widget.config.tableStart}'
+          : 'Tables ${widget.config.tableStart}–${widget.config.tableEnd}';
       return '$range • ${widget.config.tableOrder == TableOrder.sequential ? 'Sequential' : 'Random'}';
     }
-    return '${complexityLabel(widget.config.complexity)} difficulty • ${widget.config.timeMode == PracticeTimeMode.stopwatch ? 'Stopwatch' : _format(Duration(seconds: widget.config.timeLimitSeconds))}';
+    final mode = widget.config.timeMode == PracticeTimeMode.stopwatch
+        ? 'Stopwatch'
+        : _format(Duration(seconds: widget.config.timeLimitSeconds));
+    return '${complexityLabel(widget.config.complexity)} difficulty • $mode';
   }
 
-  Widget _metric(IconData icon, String text, Color color) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), decoration: BoxDecoration(color: color.withValues(alpha: .10), borderRadius: BorderRadius.circular(12)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 16, color: color), const SizedBox(width: 5), Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: color))]));
+  Widget _metric(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(color: color.withValues(alpha: .10), borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 5),
+          Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: color)),
+        ],
+      ),
+    );
+  }
 
   String _format(Duration d) => '${d.inMinutes.toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
 
-  Widget _buildKeyboard(Color accent, bool dark) => Column(children: [
-        TextField(controller: _answer, focusNode: _focus, autofocus: true, enabled: !_locked, keyboardType: _numericInput ? const TextInputType.numberWithOptions(decimal: true, signed: true) : TextInputType.text, textInputAction: TextInputAction.done, onSubmitted: _submit, onChanged: (v) { if (widget.config.autoSubmit && v.trim().isNotEmpty && _matches(v, _question.answer)) _submit(v); }, decoration: InputDecoration(labelText: _question.inputHint, hintText: _numericInput ? 'Type the answer' : 'Letters and symbols supported', prefixIcon: Icon(Icons.keyboard_alt_outlined, color: accent), suffixIcon: IconButton(tooltip: 'Submit answer', onPressed: _locked ? null : () => _submit(_answer.text), icon: Icon(Icons.bolt_rounded, color: accent)), filled: true, fillColor: dark ? AppColors.cardDark : Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: accent.withValues(alpha: .3))), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: accent, width: 2))),),
+  Widget _buildKeyboard(Color accent, bool dark) {
+    return Column(
+      children: [
+        TextField(
+          controller: _answer,
+          focusNode: _focus,
+          autofocus: true,
+          enabled: !_locked,
+          keyboardType: _numericInput ? const TextInputType.numberWithOptions(decimal: true, signed: true) : TextInputType.text,
+          textInputAction: TextInputAction.done,
+          onSubmitted: _submit,
+          onChanged: (value) {
+            if (widget.config.autoSubmit && value.trim().isNotEmpty && _matches(value, _question.answer)) {
+              _submit(value);
+            }
+          },
+          decoration: InputDecoration(
+            labelText: _question.inputHint,
+            hintText: _numericInput ? 'Type the answer' : 'Letters and symbols supported',
+            prefixIcon: Icon(Icons.keyboard_alt_outlined, color: accent),
+            suffixIcon: IconButton(
+              tooltip: 'Submit answer',
+              onPressed: _locked ? null : () => _submit(_answer.text),
+              icon: Icon(Icons.bolt_rounded, color: accent),
+            ),
+            filled: true,
+            fillColor: dark ? AppColors.cardDark : Colors.white,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: accent.withValues(alpha: .3))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: accent, width: 2)),
+          ),
+        ),
         const SizedBox(height: 10),
-        Text(widget.config.autoSubmit ? 'Auto-submit on exact answer • Enter also works' : 'Press Enter or tap the bolt to submit', style: TextStyle(fontSize: 12, color: dark ? Colors.white60 : Colors.black54)),
-      ]);
+        Text(
+          widget.config.autoSubmit ? 'Auto-submit on exact answer • Enter also works' : 'Press Enter or tap the bolt to submit',
+          style: TextStyle(fontSize: 12, color: dark ? Colors.white60 : Colors.black54),
+        ),
+      ],
+    );
+  }
 
   Widget _buildMcq(Color accent) {
     return Column(
-      children: _question.options.asMap().entries.map((entry) {
-        final index = entry.key;
-        final option = entry.value;
+      children: List.generate(_question.options.length, (index) {
+        final option = _question.options[index];
+        final selected = _answer.text == option;
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 1),
-            duration: _duration(180 + index * 45),
-            curve: Curves.easeOutBack,
-            builder: (_, value, child) => Opacity(
-              opacity: value.clamp(0.0, 1.0).toDouble(),
-              child: Transform.translate(offset: Offset(0, (1 - value) * 10), child: child),
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: _locked ? null : () {
-                  _answer.text = option;
-                  _feedback.tap();
-                  _submit(option);
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(color: accent.withValues(alpha: .35)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                ),
-                child: Text(option, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _locked
+                  ? null
+                  : () {
+                      _answer.text = option;
+                      _feedback.tap();
+                      _submit(option);
+                    },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: BorderSide(color: selected ? accent : accent.withValues(alpha: .35), width: selected ? 2 : 1),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               ),
+              child: Text(option, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             ),
           ),
         );
-      }).toList(),
+      }),
     );
   }
 }
@@ -271,37 +422,68 @@ class PracticeResultScreen extends StatelessWidget {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.emoji_events_rounded, size: 72, color: accent),
-              const SizedBox(height: 16),
-              Text('Practice complete', style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.w900)),
-              const SizedBox(height: 6),
-              Text(config.category.name, style: TextStyle(color: dark ? Colors.white60 : Colors.black54)),
-              const SizedBox(height: 28),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(color: dark ? AppColors.cardDark : Colors.white, borderRadius: BorderRadius.circular(22)),
-                child: Column(children: [
-                  Text('${(result.accuracy * 100).round()}%', style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: accent)),
-                  const Text('Accuracy'),
-                  const SizedBox(height: 18),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                    Text('✓ ${result.correct}', style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.green)),
-                    Text('✕ ${result.wrong}', style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.red)),
-                    Text(_format(result.elapsed), style: const TextStyle(fontWeight: FontWeight.w800)),
-                  ]),
-                  const SizedBox(height: 12),
-                  Text('${result.total} questions answered', style: TextStyle(color: dark ? Colors.white60 : Colors.black54)),
-                ]),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PracticeSessionScreen(config: config))), icon: const Icon(Icons.replay_rounded), label: const Text('Practice Again')),
-              const SizedBox(height: 10),
-              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PracticeSetupScreen(category: config.category))), icon: const Icon(Icons.tune_rounded), label: const Text('Change Practice')),
-              const SizedBox(height: 10),
-              TextButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back_rounded), label: const Text('Back to Practice Topics')),
-            ]),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.emoji_events_rounded, size: 72, color: accent),
+                const SizedBox(height: 16),
+                Text('Practice complete', style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                Text(config.category.name, style: TextStyle(color: dark ? Colors.white60 : Colors.black54)),
+                const SizedBox(height: 28),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(color: dark ? AppColors.cardDark : Colors.white, borderRadius: BorderRadius.circular(22)),
+                  child: Column(
+                    children: [
+                      Text('${(result.accuracy * 100).round()}%', style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: accent)),
+                      const Text('Accuracy'),
+                      const SizedBox(height: 18),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Text('✓ ${result.correct}', style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.green)),
+                          Text('✕ ${result.wrong}', style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.red)),
+                          Text(_format(result.elapsed), style: const TextStyle(fontWeight: FontWeight.w800)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text('${result.total} questions answered', style: TextStyle(color: dark ? Colors.white60 : Colors.black54)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {
+                      Navigator.of(context).pushReplacement<void>(
+                        MaterialPageRoute<void>(builder: (context) => PracticeSessionScreen(config: config)),
+                      );
+                    },
+                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.replay_rounded), SizedBox(width: 8), Text('Practice Again')]),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.of(context).pushReplacement<void>(
+                        MaterialPageRoute<void>(builder: (context) => PracticeSetupScreen(category: config.category)),
+                      );
+                    },
+                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.tune_rounded), SizedBox(width: 8), Text('Change Practice')]),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.arrow_back_rounded), SizedBox(width: 8), Text('Back to Practice Topics')]),
+                ),
+              ],
+            ),
           ),
         ),
       ),
