@@ -1,10 +1,10 @@
-# This file configures the analyzer, which statically analyzes Dart code to
-# check for errors, warnings, and lints.
+# Analyzer configuration for the end-user Flutter package.
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:
     - build/**
+    - admin_app/**
     - android/**
     - ios/**
     - web/**
@@ -14,8 +14,6 @@ analyzer:
 
 linter:
   rules:
-    # These stylistic rules are intentionally relaxed because the existing
-    # codebase uses compact control-flow and callback syntax extensively.
     curly_braces_in_flow_control_structures: false
     unnecessary_underscores: false
     unnecessary_brace_in_string_interps: false
