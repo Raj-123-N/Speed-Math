@@ -22,18 +22,13 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
         applicationId = "com.rajan.speedmath"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
-        // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
-        // You can force using the value of versionCode by specifying the `-P force-version-code-ignoring-abi=true`
-        // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -51,9 +46,7 @@ android {
 
     buildTypes {
         release {
-            // Keep release output small by enabling R8 code shrinking and
-            // Android resource shrinking. Flutter's generated keep rules
-            // protect the Dart/Flutter runtime and plugin entry points.
+            // Keep release output small with R8 code shrinking and resource shrinking.
             isMinifyEnabled = true
             isShrinkResources = true
             signingConfig = if (keystorePropertiesFile.exists() && keystoreProperties.containsKey("keyAlias")) {
@@ -63,6 +56,11 @@ android {
             }
         }
     }
+}
+
+dependencies {
+    // Required by flutter_local_notifications for Java 8+ library APIs.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }
 
 kotlin {
