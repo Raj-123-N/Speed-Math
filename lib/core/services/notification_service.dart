@@ -27,9 +27,7 @@ class NotificationService {
     try {
       final zoneName = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(zoneName));
-    } catch (_) {
-      // The timezone database remains available if the platform lookup fails.
-    }
+    } catch (_) {}
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings();
@@ -39,11 +37,7 @@ class NotificationService {
 
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.requestNotificationsPermission();
-    await _plugin.resolvePlatformSpecificImplementation<DarwinFlutterLocalNotificationsPlugin>()?.requestPermissions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    await _plugin.resolvePlatformSpecificImplementation<DarwinInitializationSettings>();
 
     const channel = AndroidNotificationChannel(
       _channelId,
@@ -75,12 +69,7 @@ class NotificationService {
       if (daily) {
         final dailyTime = tz.TZDateTime(tz.local, day.year, day.month, day.day, 19);
         if (dailyTime.isAfter(now)) {
-          await _schedule(
-            _dailyIdBase + dayOffset,
-            dailyTime,
-            'Keep your maths streak alive',
-            'A few minutes of Practice today keeps your learned skills sharp.',
-          );
+          await _schedule(_dailyIdBase + dayOffset, dailyTime, 'Keep your maths streak alive', 'A few minutes of Practice today keeps your learned skills sharp.');
         }
       }
       if (smart) {
@@ -88,12 +77,7 @@ class NotificationService {
         final minute = (day.day * 17) % 60;
         final smartTime = tz.TZDateTime(tz.local, day.year, day.month, day.day, hour, minute);
         if (smartTime.isAfter(now) && !(hour == 19 && minute == 0)) {
-          await _schedule(
-            _smartIdBase + dayOffset,
-            smartTime,
-            'Quick Practice break',
-            'You have learned the method. Now practise it again for speed and accuracy.',
-          );
+          await _schedule(_smartIdBase + dayOffset, smartTime, 'Quick Practice break', 'You have learned the method. Now practise it again for speed and accuracy.');
         }
       }
     }
@@ -117,42 +101,16 @@ class NotificationService {
     await syncSchedules();
   }
 
-  Future<bool> isEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_notificationSetting) ?? true;
-  }
-
-  Future<bool> isDailyReminderEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_dailySetting) ?? true;
-  }
-
-  Future<bool> isSmartReminderEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_smartSetting) ?? true;
-  }
-
+  Future<bool> isEnabled() async => (await SharedPreferences.getInstance()).getBool(_notificationSetting) ?? true;
+  Future<bool> isDailyReminderEnabled() async => (await SharedPreferences.getInstance()).getBool(_dailySetting) ?? true;
+  Future<bool> isSmartReminderEnabled() async => (await SharedPreferences.getInstance()).getBool(_smartSetting) ?? true;
   Future<void> cancelAll() => _plugin.cancelAll();
 
   Future<void> _schedule(int id, tz.TZDateTime date, String title, String body) async {
     const details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        _channelId,
-        'Practice reminders',
-        channelDescription: 'Gentle reminders to keep practising learned maths topics.',
-        importance: Importance.defaultImportance,
-        priority: Priority.defaultPriority,
-      ),
+      android: AndroidNotificationDetails(_channelId, 'Practice reminders', channelDescription: 'Gentle reminders to keep practising learned maths topics.', importance: Importance.defaultImportance, priority: Priority.defaultPriority),
       iOS: DarwinNotificationDetails(),
     );
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      date,
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-    );
+    await _plugin.zonedSchedule(id, title, body, date, details, androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime);
   }
 }
