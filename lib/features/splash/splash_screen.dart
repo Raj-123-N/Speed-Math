@@ -105,7 +105,6 @@ class _SplashScreenState extends State<SplashScreen>
         opacity: _fadeAnim,
         child: Stack(
           children: [
-            // ── Ambient background blobs ──────────────────────────────────
             Positioned(
               top: -80,
               right: -80,
@@ -165,7 +164,7 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(18),
-                          child: Lottie.asset(AppAssets.logoAnimation, repeat: true),
+                          child: Lottie.asset(AppAssets.animMathLoader, repeat: true),
                         ),
                       ),
                     ),
@@ -176,7 +175,7 @@ class _SplashScreenState extends State<SplashScreen>
                         children: [
                           Text(
                             'SPEED MATH',
-                            style: AppTypography.displaySmall.copyWith(
+                            style: AppTypography.displayMedium.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 2,
