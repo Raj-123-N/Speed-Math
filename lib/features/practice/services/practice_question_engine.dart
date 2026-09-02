@@ -13,6 +13,7 @@ class PracticeQuestionEngine {
   final Random _random;
   final List<String> _recent = [];
   final Map<String, int> _tableCursor = {};
+  final Map<String, List<int>> _tableOrders = {};
 
   PracticeQuestion next(PracticeConfig config) {
     var question = _generate(config);
@@ -167,8 +168,6 @@ class PracticeQuestionEngine {
     return _numeric('$table × $multiplier = ?', table * multiplier);
   }
 
-  final Map<String, List<int>> _tableOrders = {};
-
   PracticeQuestion _recall(PracticeConfig c) {
     switch (c.category.operation) {
       case MathOperation.square: return _square(c);
@@ -203,11 +202,14 @@ class PracticeQuestionEngine {
 
   PracticeQuestion _numberSystem(PracticeConfig c) {
     final n = _between(-100 * _scale(c.complexity), 100 * _scale(c.complexity));
-    final type = _random.nextInt(4);
-    if (type == 0) return _text('$n is ___', n % 2 == 0 ? 'even' : 'odd');
-    if (type == 1) return _text('$n is ___', n >= 0 ? 'non-negative' : 'negative');
-    if (type == 2) return _text('$n is ___', n == n.abs() ? 'non-negative' : 'negative');
-    return _numeric('|$n| = ?', n.abs());
+    switch (_random.nextInt(3)) {
+      case 0:
+        return _text('$n is ___', n.isEven ? 'even' : 'odd');
+      case 1:
+        return _text('$n is ___', n >= 0 ? 'non-negative' : 'negative');
+      default:
+        return _numeric('|$n| = ?', n.abs());
+    }
   }
 
   PracticeQuestion _placeValue(PracticeConfig c) {
@@ -231,9 +233,7 @@ class PracticeQuestionEngine {
 
   PracticeQuestion _divisibility(PracticeConfig c) {
     final d = [2, 3, 4, 5, 6, 8, 9, 10, 11][_random.nextInt(9)];
-    final base = _between(100, 9999);
-    final digit = _between(0, 9);
-    final n = int.parse('$base$digit');
+    final n = _between(1000, 999999);
     return _text('Is $n divisible by $d?', n % d == 0 ? 'Yes' : 'No');
   }
 
@@ -245,23 +245,22 @@ class PracticeQuestionEngine {
 
   PracticeQuestion _averages(PracticeConfig c) {
     final count = _between(3, 7), average = _between(8, 40 * _scale(c.complexity));
-    final changed = _between(1, count);
     final delta = _between(1, 10);
-    final newAverage = average + delta / count;
     if (_random.nextBool()) {
-      return _numeric('$count values average $average. Add $delta to one value. New average = ?', newAverage);
+      return _numeric('$count values average $average. Add $delta to one value. New average = ?', average + delta / count);
     }
     return _numeric('Total of $count values with average $average = ?', count * average);
   }
 
   PracticeQuestion _ratio(PracticeConfig c) {
     final a = _between(2, 12), b = _between(2, 15), total = (a + b) * _between(2, 12);
-    return _numeric('Divide $total in ratio $a:$b. Larger share = ?', max(a, b) * total ~/ (a + b));
+    final larger = max(a, b);
+    return _numeric('Divide $total in ratio $a:$b. Larger share = ?', larger * total ~/ (a + b));
   }
 
   PracticeQuestion _percentage(PracticeConfig c) {
     final pct = [5, 10, 12, 15, 20, 25, 30, 40, 50, 75][_random.nextInt(10)];
-    final base = _between(20, 1000 ~/ max(1, pct) * 10);
+    final base = _between(20, max(20, 1000 ~/ pct * 10));
     return _numeric('$pct% of $base = ?', base * pct / 100);
   }
 
@@ -280,15 +279,23 @@ class PracticeQuestionEngine {
   }
 
   PracticeQuestion _mixture(PracticeConfig c) {
-    final low = _between(10, 30), high = _between(low + 10, 70), target = _between(low + 2, high - 2);
-    final ratioHigh = target - low, ratioLow = high - target;
-    return _numeric('Mix $low% and $high% to get $target%. Ratio low:high = ?', ratioLow * 100 + ratioHigh, inputHint: 'Enter low:high as a:b');
+    final low = _between(10, 30);
+    final high = _between(low + 10, 70);
+    final target = _between(low + 2, high - 2);
+    final lowParts = high - target;
+    final highParts = target - low;
+    return _text('Mix $low% and $high% to get $target%. Ratio low:high = ?', '$lowParts:$highParts');
   }
 
   PracticeQuestion _partnership(PracticeConfig c) {
-    final a = _between(2, 10), b = _between(2, 12), monthsA = _between(3, 12), monthsB = _between(3, 12);
-    final profit = (a * monthsA + b * monthsB) * 10;
-    return _numeric('Capital-time units total = ?', profit);
+    final capitalA = _between(2, 10);
+    final capitalB = _between(2, 12);
+    final monthsA = _between(3, 12);
+    final monthsB = _between(3, 12);
+    final shareA = capitalA * monthsA;
+    final shareB = capitalB * monthsB;
+    final gcd = _gcd(shareA, shareB);
+    return _text('Profit-sharing ratio A:B for $capitalA×$monthsA and $capitalB×$monthsB = ?', '${shareA ~/ gcd}:${shareB ~/ gcd}');
   }
 
   PracticeQuestion _ages(PracticeConfig c) {
@@ -360,6 +367,7 @@ class PracticeQuestionEngine {
 
   PracticeQuestion _geometry(PracticeConfig c) {
     final a = _between(30, 100), b = _between(20, 80);
+    if (a + b >= 180) return _geometry(c);
     return _numeric('Triangle angles: $a°, $b°, third angle = ?', 180 - a - b);
   }
 
@@ -374,10 +382,9 @@ class PracticeQuestionEngine {
   }
 
   PracticeQuestion _pythagorean(PracticeConfig c) {
-    final a = _between(3, 12), b = _between(4, 16);
-    final c2 = a * a + b * b;
-    final root = sqrt(c2);
-    return _numeric('Right triangle legs $a and $b. Hypotenuse ≈ ?', root);
+    const triples = <List<int>>[[3, 4, 5], [5, 12, 13], [6, 8, 10], [8, 15, 17], [9, 12, 15], [12, 16, 20]];
+    final triple = triples[_random.nextInt(triples.length)];
+    return _numeric('Right triangle legs ${triple[0]} and ${triple[1]}. Hypotenuse = ?', triple[2]);
   }
 
   PracticeQuestion _trigonometry(PracticeConfig c) {
@@ -388,8 +395,9 @@ class PracticeQuestionEngine {
 
   PracticeQuestion _pnC(PracticeConfig c) {
     final n = _between(4, 10), r = _between(2, min(5, n));
-    final value = _random.nextBool() ? _nPr(n, r) : _nCr(n, r);
-    return _numeric('${_random.nextBool() ? 'nPr' : 'nCr'}($n,$r) = ?', value);
+    final usePermutation = _random.nextBool();
+    final value = usePermutation ? _nPr(n, r) : _nCr(n, r);
+    return _numeric('${usePermutation ? 'nPr' : 'nCr'}($n,$r) = ?', value);
   }
 
   PracticeQuestion _probability(PracticeConfig c) {
@@ -405,8 +413,7 @@ class PracticeQuestionEngine {
 
   PracticeQuestion _statistics(PracticeConfig c) {
     final values = List.generate(5, (_) => _between(5, 50))..sort();
-    final mode = values[2];
-    return _numeric('Sorted data ${values.join(', ')}. Median = ?', mode);
+    return _numeric('Sorted data ${values.join(', ')}. Median = ?', values[2]);
   }
 
   PracticeQuestion _mentalMultiplication(PracticeConfig c) {
@@ -523,7 +530,7 @@ class PracticeQuestionEngine {
 
   String _format(num value) {
     if (value.isFinite && value == value.roundToDouble()) return value.round().toString();
-    return value.toStringAsFixed(4).replaceFirst(RegExp(r'0+\$'), '').replaceFirst(RegExp(r'\.\$'), '');
+    return value.toStringAsFixed(4).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
   }
 
   int _gcd(int a, int b) {
