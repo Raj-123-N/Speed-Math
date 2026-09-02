@@ -62,7 +62,7 @@ class PracticeProgressService {
     final days = (await practiceDays()).toList()..sort();
     var best = 0, run = 0;
     DateTime? previous;
-    for (final day in days) { run = previous != null && day.difference(previous!).inDays == 1 ? run + 1 : 1; best = maxInt(best, run); previous = day; }
+    for (final day in days) { run = previous != null && day.difference(previous).inDays == 1 ? run + 1 : 1; best = maxInt(best, run); previous = day; }
     return best;
   }
 
