@@ -71,6 +71,30 @@ jobs:
         run: flutter pub get
       - name: Accept Android SDK Licenses
         run: yes | flutter doctor --android-licenses || true
+
+      # CI-only signing: this key is generated ephemerally and is NEVER a
+      # production signing identity. Production releases must use the owner's
+      # private android/key.properties + keystore.
+      - name: Create Ephemeral CI Signing Key
+        shell: bash
+        run: |
+          keytool -genkeypair \
+            -keystore "$GITHUB_WORKSPACE/ci-release.jks" \
+            -storepass ci-only-store-password \
+            -alias speed_math_ci \
+            -keypass ci-only-key-password \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 1 \
+            -dname "CN=SpeedMath CI,O=CI" \
+            -noprompt
+          cat > android/key.properties <<EOF
+          storePassword=ci-only-store-password
+          keyPassword=ci-only-key-password
+          keyAlias=speed_math_ci
+          storeFile=$GITHUB_WORKSPACE/ci-release.jks
+          EOF
+
       - name: Build Release AAB
         run: flutter build appbundle --release
       - name: Build Split Release APKs
