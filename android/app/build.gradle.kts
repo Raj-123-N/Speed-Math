@@ -51,6 +51,11 @@ android {
 
     buildTypes {
         release {
+            // Keep release output small by enabling R8 code shrinking and
+            // Android resource shrinking. Flutter's generated keep rules
+            // protect the Dart/Flutter runtime and plugin entry points.
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = if (keystorePropertiesFile.exists() && keystoreProperties.containsKey("keyAlias")) {
                 signingConfigs.getByName("release")
             } else {
