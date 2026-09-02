@@ -3,8 +3,26 @@ import 'package:speed_math_content/curriculum.dart';
 import '../../app/theme/app_colors.dart';
 
 class TopicLearnScreen extends StatelessWidget {
- const TopicLearnScreen({super.key,required this.topic}); final LessonTopic topic;
- @override Widget build(BuildContext context){ final dark=Theme.of(context).brightness==Brightness.dark; return Scaffold(backgroundColor:dark?AppColors.backgroundDark:const Color(0xFFF5F7FB),appBar:AppBar(title:Text(topic.title,style:const TextStyle(fontWeight:FontWeight.w900)),backgroundColor:Colors.transparent),body:ListView(padding:const EdgeInsets.fromLTRB(16,8,16,40),children:[_hero(dark),_section('Core concepts',topic.concepts,Icons.lightbulb_outline_rounded,dark),_section('How to solve',topic.methods,Icons.route_rounded,dark),_section('Worked examples',topic.examples,Icons.menu_book_rounded,dark),_section('Common traps',topic.traps,Icons.warning_amber_rounded,dark),_section('Practice focus',topic.practice,Icons.bolt_rounded,dark),const SizedBox(height:8),Container(padding:const EdgeInsets.all(16),decoration:BoxDecoration(color:AppColors.primary.withValues(alpha:.08),borderRadius:BorderRadius.circular(18)),child:const Text('Learning rule: understand the method, verify one example, then repeat the topic in Practice. Revision is for recall after learning.',style:TextStyle(fontWeight:FontWeight.w700,height:1.4)))]); }
- Widget _hero(bool dark)=>Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(gradient:LinearGradient(colors:[AppColors.primary.withValues(alpha:.18),AppColors.primary.withValues(alpha:.04)]),borderRadius:BorderRadius.circular(22),border:Border.all(color:AppColors.primary.withValues(alpha:.18))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(topic.level.name.toUpperCase(),style:const TextStyle(fontSize:11,fontWeight:FontWeight.w900,color:AppColors.primary,letterSpacing:1)),const SizedBox(height:7),Text(topic.summary,style:TextStyle(fontSize:15,color:dark?Colors.white70:Colors.black87,height:1.4))]);
- Widget _section(String title,List<String> items,IconData icon,bool dark)=>Padding(padding:const EdgeInsets.only(top:12),child:Card(elevation:0,color:dark?AppColors.cardDark:Colors.white,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(18)),child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Row(children:[Icon(icon,color:AppColors.primary),const SizedBox(width:9),Text(title,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16))]),const SizedBox(height:10),...items.map((x)=>Padding(padding:const EdgeInsets.only(bottom:9),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('•  ',style:TextStyle(color:AppColors.primary,fontWeight:FontWeight.w900)),Expanded(child:Text(x,style:const TextStyle(height:1.35)))])))])));
+  const TopicLearnScreen({super.key, required this.topic});
+  final LessonTopic topic;
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(
+      backgroundColor: dark ? AppColors.backgroundDark : const Color(0xFFF5F7FB),
+      appBar: AppBar(title: Text(topic.title, style: const TextStyle(fontWeight: FontWeight.w900)), backgroundColor: Colors.transparent),
+      body: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 40), children: [
+        _hero(dark),
+        _section('Core concepts', topic.concepts, Icons.lightbulb_outline_rounded, dark),
+        _section('How to solve', topic.methods, Icons.route_rounded, dark),
+        _section('Worked examples', topic.examples, Icons.menu_book_rounded, dark),
+        _section('Common traps', topic.traps, Icons.warning_amber_rounded, dark),
+        _section('Practice focus', topic.practice, Icons.bolt_rounded, dark),
+        const SizedBox(height: 8),
+        Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(18)), child: const Text('Learning rule: understand the method, verify one example, then repeat the topic in Practice. Revision is for recall after learning.', style: TextStyle(fontWeight: FontWeight.w700, height: 1.4))),
+      ]),
+    );
+  }
+  Widget _hero(bool dark) => Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: .18), AppColors.primary.withValues(alpha: .04)]), borderRadius: BorderRadius.circular(22), border: Border.all(color: AppColors.primary.withValues(alpha: .18))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(topic.level.name.toUpperCase(), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppColors.primary, letterSpacing: 1)), const SizedBox(height: 7), Text(topic.summary, style: TextStyle(fontSize: 15, color: dark ? Colors.white70 : Colors.black87, height: 1.4))]));
+  Widget _section(String title, List<String> items, IconData icon, bool dark) => Padding(padding: const EdgeInsets.only(top: 12), child: Card(elevation: 0, color: dark ? AppColors.cardDark : Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)), child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Icon(icon, color: AppColors.primary), const SizedBox(width: 9), Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16))]), const SizedBox(height: 10), ...items.map((x) => Padding(padding: const EdgeInsets.only(bottom: 9), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('•  ', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900)), Expanded(child: Text(x, style: const TextStyle(height: 1.35)))]))])));
 }
