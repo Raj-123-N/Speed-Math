@@ -5,11 +5,11 @@ import 'models/revision_models.dart';
 import 'widgets/module_card.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Revision / Learn Main Screen
+// Learn Main Screen (formerly Revision)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class RevisionScreen extends StatelessWidget {
-  const RevisionScreen({super.key});
+class LearnScreen extends StatelessWidget {
+  const LearnScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class RevisionScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.backgroundDark : const Color(0xFFF0F2F7),
-      appBar: const SpeedMathAppBar(title: 'Math Academy'),
+      appBar: const SpeedMathAppBar(title: 'Learn'),
       body: ListView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 110),

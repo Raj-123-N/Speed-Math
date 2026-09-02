@@ -6,11 +6,12 @@ import 'package:speed_math_content/curriculum.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: FirebaseOptions(
-    apiKey: const String.fromEnvironment('FIREBASE_API_KEY'),
-    appId: const String.fromEnvironment('FIREBASE_APP_ID'),
-    messagingSenderId: const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: const String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: 'speed-math-app-1'),
+  await Firebase.initializeApp(options: const FirebaseOptions(
+    apiKey: String.fromEnvironment('FIREBASE_API_KEY'),
+    appId: String.fromEnvironment('FIREBASE_APP_ID'),
+    messagingSenderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: 'speed-math-app-1'),
+    authDomain: String.fromEnvironment('FIREBASE_AUTH_DOMAIN', defaultValue: 'speed-math-app-1.firebaseapp.com'),
   ));
   runApp(const AdminApp());
 }
@@ -31,8 +32,66 @@ class AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) => StreamBuilder<User?>(
     stream: FirebaseAuth.instance.authStateChanges(),
-    builder: (_, snapshot) => snapshot.data == null ? const LoginScreen() : const DashboardScreen(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      }
+      final user = snapshot.data;
+      if (user == null) {
+        return const LoginScreen();
+      }
+      return RoleGate(user: user);
+    },
   );
+}
+
+class RoleGate extends StatefulWidget {
+  final User user;
+  const RoleGate({super.key, required this.user});
+  @override State<RoleGate> createState() => _RoleGateState();
+}
+
+class _RoleGateState extends State<RoleGate> {
+  bool _loading = true;
+
+  @override void initState() {
+    super.initState();
+    _checkRole();
+  }
+
+  Future<void> _checkRole() async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('admins').doc(widget.user.uid).get();
+      if (!doc.exists) {
+        await _signOutWithError('Not authorized as an administrator');
+        return;
+      }
+      final role = doc.data()?['role'];
+      if (role != 'admin' && role != 'owner') {
+        await _signOutWithError('Not authorized as an administrator');
+        return;
+      }
+      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      // Typically FirebaseException with permission-denied
+      await _signOutWithError('Not authorized as an administrator');
+    }
+  }
+
+  Future<void> _signOutWithError(String message) async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    return const DashboardScreen();
+  }
 }
 
 class LoginScreen extends StatefulWidget {
@@ -40,19 +99,20 @@ class LoginScreen extends StatefulWidget {
   @override State<LoginScreen> createState() => _LoginState();
 }
 class _LoginState extends State<LoginScreen> {
-  final email = TextEditingController();
-  final password = TextEditingController();
   bool busy = false;
   String? error;
-  @override void dispose() { email.dispose(); password.dispose(); super.dispose(); }
+
   Future<void> login() async {
     setState(() => busy = true);
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email.text.trim(), password: password.text);
+      await FirebaseAuth.instance.signInWithPopup(GoogleAuthProvider());
     } on FirebaseAuthException catch (e) {
       if (mounted) setState(() => error = e.message ?? 'Sign-in failed');
-    } finally { if (mounted) setState(() => busy = false); }
+    } finally { 
+      if (mounted) setState(() => busy = false); 
+    }
   }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     body: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 420), child: Card(child: Padding(
@@ -62,12 +122,12 @@ class _LoginState extends State<LoginScreen> {
         const SizedBox(height: 12),
         const Text('Speed Math Admin', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
         const SizedBox(height: 20),
-        TextField(controller: email, decoration: const InputDecoration(labelText: 'Admin email', border: OutlineInputBorder())),
-        const SizedBox(height: 12),
-        TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder())),
-        if (error != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(error!, style: const TextStyle(color: Colors.red))),
-        const SizedBox(height: 16),
-        FilledButton(onPressed: busy ? null : login, child: Text(busy ? 'Signing in…' : 'Sign in')),
+        if (error != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: Text(error!, style: const TextStyle(color: Colors.red))),
+        FilledButton.icon(
+          onPressed: busy ? null : login, 
+          icon: const Icon(Icons.login),
+          label: Text(busy ? 'Signing in…' : 'Sign in with Google')
+        ),
       ]),
     )))),
   );
@@ -143,5 +203,5 @@ class _PublishState extends State<PublishScreen> {
     } catch (e) { if (mounted) setState(() => message = 'Publish failed: $e'); }
     finally { if (mounted) setState(() => busy = false); }
   }
-  @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Publish')), body: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 600), child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.publish_rounded, size: 54), const SizedBox(height: 12), const Text('Publish all current curriculum', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)), const SizedBox(height: 8), const Text('The user app reads only the published document and keeps the bundled curriculum as an offline fallback.'), const SizedBox(height: 18), FilledButton.icon(onPressed: busy ? null : publish, icon: const Icon(Icons.cloud_upload_rounded), label: Text(busy ? 'Publishing…' : 'Publish')), if (message != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(message!))]))));
+  @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Publish')), body: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 600), child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.publish_rounded, size: 54), const SizedBox(height: 12), const Text('Publish all current curriculum', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)), const SizedBox(height: 8), const Text('The user app reads only the published document and keeps the bundled curriculum as an offline fallback.'), const SizedBox(height: 18), FilledButton.icon(onPressed: busy ? null : publish, icon: const Icon(Icons.cloud_upload_rounded), label: Text(busy ? 'Publishing…' : 'Publish')), if (message != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(message!))])))));
 }
