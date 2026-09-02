@@ -218,10 +218,42 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> with Sing
         Text(widget.config.autoSubmit ? 'Auto-submit on exact answer • Enter also works' : 'Press Enter or tap the bolt to submit', style: TextStyle(fontSize: 12, color: dark ? Colors.white60 : Colors.black54)),
       ]);
 
-  Widget _buildMcq(Color accent) => Column(children: _question.options.asMap().entries.map((entry) {
-    final index = entry.key, option = entry.value;
-    return Padding(padding: const EdgeInsets.only(bottom: 10), child: TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: 1), duration: _duration(180 + index * 45), curve: Curves.easeOutBack, builder: (_, value, child) => Opacity(opacity: value.clamp(0.0, 1.0).toDouble(), child: Transform.translate(offset: Offset(0, (1 - value) * 10), child: child)), child: SizedBox(width: double.infinity, child: OutlinedButton(onPressed: _locked ? null : () { _answer.text = option; _feedback.tap(); _submit(option); }, style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), side: BorderSide(color: accent.withValues(alpha: .35)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))), child: Text(option, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800))))));
-  }).toList());
+  Widget _buildMcq(Color accent) {
+    return Column(
+      children: _question.options.asMap().entries.map((entry) {
+        final index = entry.key;
+        final option = entry.value;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: _duration(180 + index * 45),
+            curve: Curves.easeOutBack,
+            builder: (_, value, child) => Opacity(
+              opacity: value.clamp(0.0, 1.0).toDouble(),
+              child: Transform.translate(offset: Offset(0, (1 - value) * 10), child: child),
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _locked ? null : () {
+                  _answer.text = option;
+                  _feedback.tap();
+                  _submit(option);
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(color: accent.withValues(alpha: .35)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                ),
+                child: Text(option, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
 }
 
 class PracticeResultScreen extends StatelessWidget {
