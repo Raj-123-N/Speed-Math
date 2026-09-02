@@ -35,17 +35,14 @@ class PracticeProgressService {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_historyKey);
     if (raw == null || raw.isEmpty) return [];
-    try {
-      final list = jsonDecode(raw) as List<dynamic>;
-      return list.whereType<Map<String, dynamic>>().map(PracticeSessionRecord.fromJson).toList(growable: true);
-    } catch (_) { return []; }
+    try { final list = jsonDecode(raw) as List<dynamic>; return list.whereType<Map<String, dynamic>>().map(PracticeSessionRecord.fromJson).toList(growable: true); } catch (_) { return []; }
   }
 
   Future<void> recordSession({required String topicId, required String topicName, String plan = '', required int questions, required int correct, required Duration elapsed}) async {
+    if (questions <= 0) return;
     final prefs = await SharedPreferences.getInstance();
     final records = await history();
-    final total = questions <= 0 ? 1 : questions;
-    records.insert(0, PracticeSessionRecord(date: DateTime.now(), topicId: topicId, topicName: topicName, plan: plan.isEmpty ? '$questions questions' : plan, questions: questions, correct: correct, elapsedSeconds: elapsed.inSeconds, accuracy: correct / total));
+    records.insert(0, PracticeSessionRecord(date: DateTime.now(), topicId: topicId, topicName: topicName, plan: plan.isEmpty ? '$questions questions' : plan, questions: questions, correct: correct, elapsedSeconds: elapsed.inSeconds, accuracy: correct / questions));
     await prefs.setString(_historyKey, jsonEncode(records.take(500).map((e) => e.toJson()).toList()));
   }
 
