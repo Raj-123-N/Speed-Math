@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
@@ -273,9 +274,9 @@ class PracticeResultScreen extends StatelessWidget {
                 ]),
               ),
               const SizedBox(height: 24),
-              SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PracticeSessionScreen(config: config))), icon: const Icon(Icons.replay_rounded), label: const Text('Practice Again')),
+              SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PracticeSessionScreen(config: config))), icon: const Icon(Icons.replay_rounded), label: const Text('Practice Again'))),
               const SizedBox(height: 10),
-              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PracticeSetupScreen(category: config.category))), icon: const Icon(Icons.tune_rounded), label: const Text('Change Practice')),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PracticeSetupScreen(category: config.category))), icon: const Icon(Icons.tune_rounded), label: const Text('Change Practice'))),
               const SizedBox(height: 10),
               TextButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back_rounded), label: const Text('Back to Practice Topics')),
             ]),

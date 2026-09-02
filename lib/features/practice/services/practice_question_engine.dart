@@ -57,10 +57,14 @@ class PracticeQuestionEngine {
     final count = c.terms.clamp(2, 6);
     final left = _number(c.lhsDigits);
     final values = <int>[left];
-    for (var i = 1; i < count; i++) values.add(_number(c.rhsDigits));
+    for (var i = 1; i < count; i++) {
+      values.add(_number(c.rhsDigits));
+    }
     if (c.category.operation == MathOperation.subtraction) {
       final maxRhs = max(1, left ~/ max(1, count - 1));
-      for (var i = 1; i < values.length; i++) values[i] = min(values[i], maxRhs);
+      for (var i = 1; i < values.length; i++) {
+        values[i] = min(values[i], maxRhs);
+      }
       final answer = values.first - values.skip(1).fold(0, (a, b) => a + b);
       return _numeric('${values.join(' − ')} = ?', answer);
     }
@@ -270,8 +274,12 @@ class PracticeQuestionEngine {
     final values = <num>{answer};
     final spread = max(1, answer.abs() < 10 ? 1 : answer.abs() ~/ 10);
     var guard = 0;
-    while (values.length < 4 && guard++ < 100) values.add(answer + _between(-spread * 3, spread * 3));
-    while (values.length < 4) values.add(answer + values.length);
+    while (values.length < 4 && guard++ < 100) {
+      values.add(answer + _between(-spread * 3, spread * 3));
+    }
+    while (values.length < 4) {
+      values.add(answer + values.length);
+    }
     final result = values.map(_formatNumber).toList()..shuffle(_random);
     return result;
   }
