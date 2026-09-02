@@ -10,12 +10,13 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+  errors:
+    unused_field: ignore
+    unused_element: ignore
 
 linter:
   rules:
     curly_braces_in_flow_control_structures: false
     unnecessary_underscores: false
     unnecessary_brace_in_string_interps: false
-    unused_field: ignore
-    unused_element: ignore
-    prefer_interpolation_to_compose_strings: ignore
+    prefer_interpolation_to_compose_strings: false
