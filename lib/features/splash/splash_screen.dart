@@ -21,15 +21,19 @@ class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _fadeCtrl;
   late AnimationController _logoCtrl;
-  late AnimationController _pulseCtrl;
+  late AnimationController _lottieCtrl;
+  late AnimationController _textCtrl;
 
   late Animation<double> _fadeAnim;
   late Animation<double> _logoScaleAnim;
-  late Animation<double> _logoSlideAnim;
+  late Animation<double> _logoFadeAnim;
+  late Animation<double> _lottieFadeAnim;
+  late Animation<double> _lottieScaleAnim;
   late Animation<double> _textFadeAnim;
-  late Animation<double> _pulseAnim;
+  late Animation<double> _textSlideAnim;
 
-  Timer? _logoTimer;
+  Timer? _lottieTimer;
+  Timer? _textTimer;
   Timer? _navigationTimer;
   bool _navigationCancelled = false;
 
@@ -39,43 +43,54 @@ class _SplashScreenState extends State<SplashScreen>
 
     _fadeCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 600),
     );
     _logoCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 900),
     );
-    _pulseCtrl = AnimationController(
+    _lottieCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 800),
+    );
+    _textCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
 
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
+
+    // Phase 1: Logo scale & fade
     _logoScaleAnim = Tween<double>(begin: 0.6, end: 1.0).animate(
       CurvedAnimation(parent: _logoCtrl, curve: Curves.elasticOut),
     );
-    _logoSlideAnim = Tween<double>(begin: 40.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _logoCtrl,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
-      ),
+    _logoFadeAnim = CurvedAnimation(parent: _logoCtrl, curve: Curves.easeIn);
+
+    // Phase 2: Lottie animation fade & gentle scale
+    _lottieFadeAnim = CurvedAnimation(parent: _lottieCtrl, curve: Curves.easeIn);
+    _lottieScaleAnim = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _lottieCtrl, curve: Curves.easeOutBack),
     );
-    _textFadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _logoCtrl,
-        curve: const Interval(0.4, 1.0, curve: Curves.easeIn),
-      ),
-    );
-    _pulseAnim = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
+
+    // Phase 3: Text fade & subtle slide
+    _textFadeAnim = CurvedAnimation(parent: _textCtrl, curve: Curves.easeIn);
+    _textSlideAnim = Tween<double>(begin: 20.0, end: 0.0).animate(
+      CurvedAnimation(parent: _textCtrl, curve: Curves.easeOutCubic),
     );
 
     _fadeCtrl.forward();
-    _logoTimer = Timer(const Duration(milliseconds: 200), () {
-      if (!_navigationCancelled && mounted) _logoCtrl.forward();
+    _logoCtrl.forward();
+
+    _lottieTimer = Timer(const Duration(milliseconds: 700), () {
+      if (!_navigationCancelled && mounted) _lottieCtrl.forward();
     });
+
+    _textTimer = Timer(const Duration(milliseconds: 1400), () {
+      if (!_navigationCancelled && mounted) _textCtrl.forward();
+    });
+
     _navigationTimer = Timer(
-      const Duration(milliseconds: 2800),
+      const Duration(milliseconds: 3200),
       _navigateToHome,
     );
   }
@@ -105,11 +120,13 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void dispose() {
     _navigationCancelled = true;
-    _logoTimer?.cancel();
+    _lottieTimer?.cancel();
+    _textTimer?.cancel();
     _navigationTimer?.cancel();
     _fadeCtrl.dispose();
     _logoCtrl.dispose();
-    _pulseCtrl.dispose();
+    _lottieCtrl.dispose();
+    _textCtrl.dispose();
     super.dispose();
   }
 
@@ -123,6 +140,7 @@ class _SplashScreenState extends State<SplashScreen>
         opacity: _fadeAnim,
         child: Stack(
           children: [
+            // Ambient glowing circles
             Positioned(
               top: -80,
               right: -80,
@@ -131,7 +149,7 @@ class _SplashScreenState extends State<SplashScreen>
                 height: size.width * .7,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: .10),
+                  color: AppColors.primary.withValues(alpha: .12),
                 ),
               ),
             ),
@@ -143,81 +161,118 @@ class _SplashScreenState extends State<SplashScreen>
                 height: size.width * .65,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.module2Color.withValues(alpha: .08),
+                  color: AppColors.module2Color.withValues(alpha: .10),
                 ),
               ),
             ),
             Center(
-              child: AnimatedBuilder(
-                animation: Listenable.merge([_logoCtrl, _pulseCtrl]),
-                builder: (context, child) => Transform.translate(
-                  offset: Offset(0, _logoSlideAnim.value),
-                  child: Transform.scale(
-                    scale: _logoScaleAnim.value,
-                    child: child,
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Transform.scale(
-                      scale: _pulseAnim.value,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Phase 1: App Logo
+                  FadeTransition(
+                    opacity: _logoFadeAnim,
+                    child: ScaleTransition(
+                      scale: _logoScaleAnim,
                       child: Container(
-                        width: 108,
-                        height: 108,
+                        width: 96,
+                        height: 96,
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [
-                              AppColors.gradOrangeStart,
-                              AppColors.gradOrangeEnd,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withValues(alpha: .28),
+                              color: AppColors.primary.withValues(alpha: .30),
                               blurRadius: 28,
-                              spreadRadius: 4,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(18),
-                          child: Lottie.asset(
-                            AppAssets.animMathLoader,
-                            repeat: true,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(22),
+                          child: Image.asset(
+                            AppAssets.iconLogo,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const Icon(
+                              Icons.calculate_rounded,
+                              size: 64,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    FadeTransition(
-                      opacity: _textFadeAnim,
-                      child: Column(
-                        children: [
-                          Text(
-                            'SPEED MATH',
-                            style: AppTypography.displayMedium.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Practice. Improve. Master.',
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: Colors.white70,
-                              letterSpacing: .4,
-                            ),
-                          ),
-                        ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Phase 2: Lottie animation
+                  FadeTransition(
+                    opacity: _lottieFadeAnim,
+                    child: ScaleTransition(
+                      scale: _lottieScaleAnim,
+                      child: SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: Lottie.asset(
+                          AppAssets.animMathLoader,
+                          repeat: true,
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Phase 3: SPEED MATH by Rajan
+                  AnimatedBuilder(
+                    animation: _textCtrl,
+                    builder: (context, child) => Transform.translate(
+                      offset: Offset(0, _textSlideAnim.value),
+                      child: FadeTransition(
+                        opacity: _textFadeAnim,
+                        child: child,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'SPEED MATH',
+                          style: AppTypography.displayMedium.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2.2,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 18,
+                              height: 1.5,
+                              color: AppColors.primary.withValues(alpha: .6),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'by Rajan',
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 18,
+                              height: 1.5,
+                              color: AppColors.primary.withValues(alpha: .6),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
