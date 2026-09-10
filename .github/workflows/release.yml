@@ -45,6 +45,44 @@ jobs:
       - name: Run Tests
         run: flutter test
 
+      - name: Accept Android SDK Licenses
+        run: yes | flutter doctor --android-licenses || true
+
+      - name: Setup Android Release Signing
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_PROPERTIES: ${{ secrets.ANDROID_KEY_PROPERTIES }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.jks
+            cat > android/key.properties <<EOF
+            storePassword=${{ secrets.ANDROID_STORE_PASSWORD || 'efi@0aYd8YiD%s*s' }}
+            keyPassword=${{ secrets.ANDROID_KEY_PASSWORD || 'efi@0aYd8YiD%s*s' }}
+            keyAlias=${{ secrets.ANDROID_KEY_ALIAS || 'speedmath' }}
+            storeFile=release.jks
+            EOF
+          elif [ -n "$KEY_PROPERTIES" ]; then
+            echo "$KEY_PROPERTIES" > android/key.properties
+          else
+            keytool -genkeypair \
+              -keystore "$GITHUB_WORKSPACE/release.jks" \
+              -storepass "efi@0aYd8YiD%s*s" \
+              -alias speedmath \
+              -keypass "efi@0aYd8YiD%s*s" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=SpeedMath,O=SpeedMath,C=US" \
+              -noprompt
+            cat > android/key.properties <<EOF
+            storePassword=efi@0aYd8YiD%s*s
+            keyPassword=efi@0aYd8YiD%s*s
+            keyAlias=speedmath
+            storeFile=$GITHUB_WORKSPACE/release.jks
+            EOF
+          fi
+
       - name: Build Split Release APKs
         run: flutter build apk --release --split-per-abi
 

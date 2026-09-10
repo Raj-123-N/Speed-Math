@@ -169,6 +169,8 @@ class AppUpdateService {
                 releaseTitle: 'Speed Math $firstTag',
                 releaseNotes:
                     'A new release ($firstTag) is available on GitHub with updated mental math drills and performance improvements.',
+                apkDownloadUrl:
+                    'https://github.com/$owner/$repo/raw/main/releases/SpeedMath-$firstTag.apk',
                 releaseHtmlUrl:
                     'https://github.com/$owner/$repo/releases/tag/$firstTag',
                 hasUpdate: true,
@@ -243,6 +245,8 @@ class AppUpdateService {
             releaseTitle: 'Speed Math v$remoteVer Update',
             releaseNotes:
                 'A new version (v$remoteVer) is available on GitHub! Download the latest APK to get the newest features, drills, and accuracy improvements.',
+            apkDownloadUrl:
+                'https://github.com/$owner/$repo/raw/main/releases/SpeedMath-v$remoteVer.apk',
             releaseHtmlUrl: 'https://github.com/$owner/$repo/releases',
             hasUpdate: newer,
           );
