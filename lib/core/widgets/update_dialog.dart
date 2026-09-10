@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
 import '../models/app_update_info.dart';
@@ -49,8 +50,7 @@ class UpdateDialog extends StatelessWidget {
     );
   }
 
-  /// Initiates a manual update check with a clean progress indicator,
-  /// dismissing the progress first before presenting the update or up-to-date dialog.
+  /// Initiates a manual update check with a clean progress indicator.
   static Future<void> checkWithProgress(
     BuildContext context, {
     AppUpdateService? updateService,
@@ -113,10 +113,12 @@ class UpdateDialog extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Querying official releases...',
+                          'Querying official GitHub releases...',
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight,
                           ),
                         ),
                       ],
@@ -132,17 +134,15 @@ class UpdateDialog extends StatelessWidget {
 
     AppUpdateInfo? info;
     DateTime? lastCheck;
-    String currentVersion = '1.0.8';
+    String currentVersion = '0.5.0';
 
     try {
       currentVersion = await service.getCurrentVersion();
       info = await service.checkForUpdate(force: true);
       lastCheck = await service.getLastCheckTime();
-    } catch (_) {
-      // Catch network or parse errors gracefully
-    }
+    } catch (_) {}
 
-    // Dismiss the checking progress dialog first!
+    // Dismiss the checking progress dialog
     if (context.mounted) {
       Navigator.of(context, rootNavigator: true).pop();
     }
@@ -153,7 +153,6 @@ class UpdateDialog extends StatelessWidget {
 
     if (!context.mounted) return;
 
-    // Small delay so navigation transition settles cleanly
     await Future.delayed(const Duration(milliseconds: 120));
     if (!context.mounted) return;
 
@@ -193,7 +192,7 @@ class UpdateDialog extends StatelessWidget {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
+        constraints: const BoxConstraints(maxWidth: 420),
         decoration: BoxDecoration(
           color: isDark ? AppColors.surfaceDark : Colors.white,
           borderRadius: BorderRadius.circular(24),
@@ -214,7 +213,7 @@ class UpdateDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ── Header Icon with Glow ──
+              // Header Icon with Glow
               Stack(
                 alignment: Alignment.center,
                 children: [
@@ -250,27 +249,28 @@ class UpdateDialog extends StatelessWidget {
                       ],
                     ),
                     child: const Icon(
-                      Icons.system_update_alt_rounded,
+                      Icons.rocket_launch_rounded,
                       color: Colors.white,
-                      size: 30,
+                      size: 28,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // ── Title ──
+              // Title
               Text(
-                'New Update Available! 🎉',
+                'New Update Available! 🚀',
                 textAlign: TextAlign.center,
                 style: AppTypography.headlineSmall.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20,
                   color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
-              // ── Version Badges ──
+              // Version comparison Badges
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
@@ -289,7 +289,9 @@ class UpdateDialog extends StatelessWidget {
                     Text(
                       'v${info.currentVersion}',
                       style: AppTypography.tagText.copyWith(
-                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -302,7 +304,8 @@ class UpdateDialog extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(8),
@@ -318,16 +321,49 @@ class UpdateDialog extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
-              // ── Release Notes Box ──
+              // Metadata Chips (Size, Date, Channel)
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                alignment: WrapAlignment.center,
+                children: [
+                  if (info.formattedSize.isNotEmpty)
+                    _buildMetaChip(
+                      icon: Icons.folder_zip_outlined,
+                      label: info.formattedSize,
+                      isDark: isDark,
+                    ),
+                  if (info.formattedPublishedDate.isNotEmpty)
+                    _buildMetaChip(
+                      icon: Icons.calendar_today_rounded,
+                      label: info.formattedPublishedDate,
+                      isDark: isDark,
+                    ),
+                  _buildMetaChip(
+                    icon: Icons.verified_outlined,
+                    label: info.isPreRelease ? 'Beta' : 'Official',
+                    isDark: isDark,
+                    color: info.isPreRelease
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFF10B981),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Release Notes Box
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  "What's New:",
+                  "What's New in v${info.latestVersion}:",
                   style: AppTypography.titleMedium.copyWith(
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
                     fontWeight: FontWeight.w700,
+                    fontSize: 13,
                   ),
                 ),
               ),
@@ -348,19 +384,56 @@ class UpdateDialog extends StatelessWidget {
                   thumbVisibility: true,
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    child: Text(
-                      info.releaseNotes.trim(),
-                      style: AppTypography.bodySmall.copyWith(
-                        color: isDark ? Colors.white70 : Colors.black87,
-                        height: 1.4,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: info.highlights.isNotEmpty
+                          ? info.highlights
+                              .map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '• ',
+                                        style: TextStyle(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          item,
+                                          style: AppTypography.bodySmall.copyWith(
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black87,
+                                            height: 1.35,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                              .toList()
+                          : [
+                              Text(
+                                info.releaseNotes.trim(),
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: isDark ? Colors.white70 : Colors.black87,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
-              // ── Primary Action: Update Now ──
+              // Primary Action: Download & Update
               GestureDetector(
                 onTap: () {
                   Navigator.of(context).pop();
@@ -388,7 +461,7 @@ class UpdateDialog extends StatelessWidget {
                       const Icon(Icons.download_rounded, color: Colors.white, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        'Download & Update',
+                        info.hasDirectApk ? 'Download APK Update' : 'View & Update',
                         style: AppTypography.buttonText.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
@@ -401,7 +474,41 @@ class UpdateDialog extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // ── Secondary Actions: Remind Later & Skip ──
+              // Secondary Action: View on GitHub
+              if (info.releaseHtmlUrl.isNotEmpty) ...[
+                GestureDetector(
+                  onTap: () async {
+                    final uri = Uri.parse(info.releaseHtmlUrl);
+                    if (await canLaunchUrl(uri)) {
+                      launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.open_in_new_rounded,
+                          size: 14,
+                          color: isDark ? Colors.white60 : Colors.black54,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'View Changelog on GitHub',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white60 : Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
+              // Secondary Actions: Skip & Later
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -432,6 +539,37 @@ class UpdateDialog extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  static Widget _buildMetaChip({
+    required IconData icon,
+    required String label,
+    required bool isDark,
+    Color? color,
+  }) {
+    final chipColor = color ?? (isDark ? Colors.white60 : Colors.black54);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: chipColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: chipColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: chipColor,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -476,7 +614,7 @@ class _UpToDateDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ── Green / Emerald Verified Icon ──
+              // Emerald Verified Icon
               Stack(
                 alignment: Alignment.center,
                 children: [
@@ -521,7 +659,7 @@ class _UpToDateDialog extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // ── Title ──
+              // Title
               Text(
                 "You're Up to Date! 🎉",
                 textAlign: TextAlign.center,
@@ -532,18 +670,20 @@ class _UpToDateDialog extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // ── Subtitle ──
+              // Subtitle
               Text(
-                'Speed Math is running the latest official version with all drills, speed tricks, and optimizations.',
+                'Speed Math is running the latest official version with all drills, custom practice ranges, and speed optimizations.',
                 textAlign: TextAlign.center,
                 style: AppTypography.bodySmall.copyWith(
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
                   height: 1.45,
                 ),
               ),
               const SizedBox(height: 18),
 
-              // ── Info Breakdown Card ──
+              // Info Breakdown Card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -579,6 +719,15 @@ class _UpToDateDialog extends StatelessWidget {
                       color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
                     ),
                     _buildDetailRow(
+                      label: 'Repository',
+                      value: 'GitHub / Speed-Math',
+                      isDark: isDark,
+                    ),
+                    Divider(
+                      height: 16,
+                      color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
+                    ),
+                    _buildDetailRow(
                       label: 'Last Checked',
                       value: timeStr,
                       isDark: isDark,
@@ -588,7 +737,7 @@ class _UpToDateDialog extends StatelessWidget {
               ),
               const SizedBox(height: 22),
 
-              // ── Done Button ──
+              // Done Button
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
                 child: Container(
@@ -664,7 +813,8 @@ class _UpToDateDialog extends StatelessWidget {
         Text(
           value,
           style: AppTypography.bodyMedium.copyWith(
-            color: valueColor ?? (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+            color: valueColor ??
+                (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
             fontWeight: FontWeight.w700,
             fontSize: 13,
           ),
@@ -673,4 +823,3 @@ class _UpToDateDialog extends StatelessWidget {
     );
   }
 }
-

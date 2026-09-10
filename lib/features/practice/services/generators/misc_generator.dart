@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../../models/practice_models.dart';
+import '../practice_question_engine.dart';
 
 int _between(int minValue, int maxValue, Random random) =>
     minValue + random.nextInt(maxValue - minValue + 1);
@@ -107,7 +108,7 @@ PracticeQuestion generateUnitDigit(PracticeConfig c, Random random) {
   final base = _between(2, 99, random);
   final exponent = _between(2, 100, random);
   final unitDigit = _powMod(base, exponent, 10);
-  return _n('Unit digit of $base^$exponent = ?', unitDigit, random,
+  return _n('Unit digit of $base${toSuperscript(exponent)} = ?', unitDigit, random,
       hint: 'Unit digit');
 }
 
@@ -117,21 +118,21 @@ PracticeQuestion generatePowers(PracticeConfig c, Random random) {
     case PracticeComplexity.easy:
       if (random.nextBool()) {
         final exp = _between(1, 10, random);
-        return _n('2^$exp = ?', pow(2, exp), random);
+        return _n('2${toSuperscript(exp)} = ?', pow(2, exp), random);
       } else {
         final exp = _between(1, 5, random);
-        return _n('3^$exp = ?', pow(3, exp), random);
+        return _n('3${toSuperscript(exp)} = ?', pow(3, exp), random);
       }
 
     case PracticeComplexity.medium:
       final base = _between(2, 9, random);
       final exp = _between(2, 4, random);
-      return _n('$base^$exp = ?', pow(base, exp), random);
+      return _n('$base${toSuperscript(exp)} = ?', pow(base, exp), random);
 
     case PracticeComplexity.hard:
       final base = _between(2, 12, random);
       final exp = _between(2, 5, random);
-      return _n('$base^$exp = ?', pow(base, exp), random);
+      return _n('$base${toSuperscript(exp)} = ?', pow(base, exp), random);
   }
 }
 

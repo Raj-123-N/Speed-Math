@@ -28,8 +28,9 @@ PracticeQuestion generateLinear(PracticeConfig c, Random random) {
 }
 
 PracticeQuestion generateQuadratic(PracticeConfig c, Random random) {
-  final a = _between(1, 8, random), b = _between(1, 8, random);
-  return _n('x² − ${a + b}x + ${a * b} = 0; smaller root = ?', min(a, b), random, hint: 'Value of x');
+  final a = _between(1, 7, random);
+  final b = _between(a + 1, 9, random);
+  return _n('x² − ${a + b}x + ${a * b} = 0; smaller root = ?', a, random, hint: 'Value of x');
 }
 
 PracticeQuestion generateCubic(PracticeConfig c, Random random) {
@@ -39,7 +40,15 @@ PracticeQuestion generateCubic(PracticeConfig c, Random random) {
 
 PracticeQuestion generatePolynomials(PracticeConfig c, Random random) {
   final root = _between(-6, 6, random), x = _between(1, 8, random);
-  return _n('For p(x)=x²−${2 * root}x+${root * root}, p($x)=?', (x - root) * (x - root), random);
+  final String poly;
+  if (root == 0) {
+    poly = 'x²';
+  } else if (root > 0) {
+    poly = 'x² − ${2 * root}x + ${root * root}';
+  } else {
+    poly = 'x² + ${-2 * root}x + ${root * root}';
+  }
+  return _n('For p(x)=$poly, p($x)=?', (x - root) * (x - root), random);
 }
 
 PracticeQuestion generateEquationMix(PracticeConfig c, Random random) =>

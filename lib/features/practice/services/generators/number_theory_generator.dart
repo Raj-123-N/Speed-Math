@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../../models/practice_models.dart';
+import '../practice_question_engine.dart';
 
 int _between(int minValue, int maxValue, Random random) =>
     minValue + random.nextInt(maxValue - minValue + 1);
@@ -119,5 +120,8 @@ PracticeQuestion generateRemainders(PracticeConfig c, Random random) {
   final base = _between(2, 20, random);
   final exponent = _between(2, 12 * _scale(c.complexity), random);
   final mod = _between(2, 12, random);
-  return _numeric('$base^$exponent mod $mod = ?', _powMod(base, exponent, mod), random);
+  return _numeric(
+      '$base${toSuperscript(exponent)} mod $mod = ?',
+      _powMod(base, exponent, mod),
+      random);
 }

@@ -34,7 +34,7 @@ PracticeQuestion generateSeries(PracticeConfig c, Random random) {
     return _n('${v.join(', ')}, ?', v.last * 2, random);
   }
   final v = List.generate(4, (i) => start + i * i);
-  return _n('${v.join(', ')}, ?', v.last + 9, random);
+  return _n('${v.join(', ')}, ?', start + 16, random);
 }
 
 PracticeQuestion generateAP(PracticeConfig c, Random random) {

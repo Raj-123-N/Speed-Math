@@ -24,6 +24,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // User Feedback and Issue Reports:
+    // Anyone can create a report with valid type and non-empty description.
+    // Only authenticated admins can read, update (resolve), or delete reports.
+    match /reports/{reportId} {
+      allow create: if request.resource.data.type in ['wrong_question', 'wrong_learn', 'issue', 'feedback']
+                    && request.resource.data.description is string
+                    && request.resource.data.description.size() > 0;
+      allow read, update, delete: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

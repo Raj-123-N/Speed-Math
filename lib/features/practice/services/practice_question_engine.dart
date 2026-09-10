@@ -21,6 +21,33 @@ import 'generators/tables_generator.dart';
 import 'generators/word_problems_generator.dart';
 import 'generators/workout_generator.dart';
 
+String toSuperscript(dynamic value) {
+  const map = {
+    '0': '⁰',
+    '1': '¹',
+    '2': '²',
+    '3': '³',
+    '4': '⁴',
+    '5': '⁵',
+    '6': '⁶',
+    '7': '⁷',
+    '8': '⁸',
+    '9': '⁹',
+    '-': '⁻',
+    '+': '⁺',
+    'n': 'ⁿ',
+    'x': 'ˣ',
+  };
+  return value.toString().split('').map((c) => map[c] ?? c).join();
+}
+
+String formatMathPrompt(String prompt) {
+  return prompt.replaceAllMapped(
+    RegExp(r'([0-9a-zA-Z\)])\^([0-9n\-]+)'),
+    (match) => '${match.group(1)}${toSuperscript(match.group(2))}',
+  );
+}
+
 /// Generates repeatable, topic-specific practice questions.
 ///
 /// Practice is deliberately separate from Quiz/Challenge: every generator can
@@ -41,6 +68,16 @@ class PracticeQuestionEngine {
     }
     _recent.add(question.prompt);
     if (_recent.length > 50) _recent.removeAt(0);
+
+    final formatted = formatMathPrompt(question.prompt);
+    if (formatted != question.prompt) {
+      return PracticeQuestion(
+        prompt: formatted,
+        answer: question.answer,
+        options: question.options,
+        inputHint: question.inputHint,
+      );
+    }
     return question;
   }
 

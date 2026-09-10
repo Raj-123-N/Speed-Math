@@ -7,19 +7,239 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/app_update_info.dart';
 
+/// Advanced GitHub release and in-app update service for Speed Math.
+///
+/// Features:
+/// - Official GitHub Releases API integration
+/// - Resilience against GitHub unauthenticated API rate-limiting (HTTP 403 fallback)
+/// - Semantic versioning comparison with build-number support
+/// - Configurable auto-check intervals and skip-version memory
+/// - Direct APK download or web release page launching
 class AppUpdateService {
-  AppUpdateService({http.Client? httpClient,this.owner='Raj-123-N',this.repo='Speed-Math'}):_client=httpClient??http.Client();
-  final http.Client _client;final String owner,repo;
-  static const _keyAutoCheck='settings_auto_check_updates',_keyLastCheck='settings_last_update_check',_keySkippedVersion='settings_skipped_update_version';
-  static const Duration _autoCheckInterval=Duration(hours:6);
-  Future<String> getCurrentVersion() async {try{final p=await PackageInfo.fromPlatform();return p.version.isNotEmpty?p.version:'0.2.0';}catch(_){return '0.2.0';}}
-  Future<bool> isAutoCheckEnabled()async{final p=await SharedPreferences.getInstance();return p.getBool(_keyAutoCheck)??true;}
-  Future<void> setAutoCheckEnabled(bool enabled)async{final p=await SharedPreferences.getInstance();await p.setBool(_keyAutoCheck,enabled);}
-  Future<DateTime?> getLastCheckTime()async{final p=await SharedPreferences.getInstance();final ms=p.getInt(_keyLastCheck);return ms==null?null:DateTime.fromMillisecondsSinceEpoch(ms);}
-  Future<void> skipVersion(String version)async{final p=await SharedPreferences.getInstance();await p.setString(_keySkippedVersion,version);}
-  Future<bool> shouldRunAutoCheck()async{if(!await isAutoCheckEnabled())return false;final last=await getLastCheckTime();return last==null||DateTime.now().difference(last)>=_autoCheckInterval;}
-  Future<AppUpdateInfo?> checkForUpdate({bool force=false})async{final current=await getCurrentVersion();if(!force&&!await shouldRunAutoCheck())return null;try{final response=await _client.get(Uri.parse('https://api.github.com/repos/$owner/$repo/releases/latest'),headers:{'Accept':'application/vnd.github.v3+json','User-Agent':'Speed-Math-App'}).timeout(const Duration(seconds:10));final p=await SharedPreferences.getInstance();await p.setInt(_keyLastCheck,DateTime.now().millisecondsSinceEpoch);if(response.statusCode==200){final data=jsonDecode(response.body) as Map<String,dynamic>;final tag=data['tag_name'] as String? ?? '';final latest=tag.replaceFirst(RegExp(r'^v',caseSensitive:false),'');final newer=isVersionNewer(current,latest);if(!force&&newer){final skipped=p.getString(_keySkippedVersion);if(skipped==latest||skipped==tag)return null;}return AppUpdateInfo.fromJson(json:data,currentVersion:current,hasUpdate:newer);}if(response.statusCode==404)return AppUpdateInfo.upToDate(current);if(kDebugMode)print('Failed to check update: HTTP ${response.statusCode}');return force?AppUpdateInfo.upToDate(current):null;}catch(e){if(kDebugMode)print('Error checking for updates: $e');return force?AppUpdateInfo.upToDate(current):null;}}
-  static bool isVersionNewer(String current,String latest){final a=_parseVersion(current),b=_parseVersion(latest),n=max(a.length,b.length);for(var i=0;i<n;i++){final x=i<a.length?a[i]:0,y=i<b.length?b[i]:0;if(y>x)return true;if(y<x)return false;}return false;}
-  static List<int> _parseVersion(String v){var s=v.trim().replaceFirst(RegExp(r'^[vV]'),'');if(s.contains('+'))s=s.split('+').first;if(s.contains('-'))s=s.split('-').first;return s.split('.').map((x)=>int.tryParse(x)??0).toList();}
-  Future<bool> launchUpdate(AppUpdateInfo info)async{final target=info.apkDownloadUrl??info.releaseHtmlUrl;if(target.isEmpty)return false;final uri=Uri.parse(target);if(await canLaunchUrl(uri))return launchUrl(uri,mode:LaunchMode.externalApplication);return false;}
+  AppUpdateService({
+    http.Client? httpClient,
+    this.owner = 'Raj-123-N',
+    this.repo = 'Speed-Math',
+  }) : _client = httpClient ?? http.Client();
+
+  final http.Client _client;
+  final String owner;
+  final String repo;
+
+  static const String _keyAutoCheck = 'settings_auto_check_updates';
+  static const String _keyLastCheck = 'settings_last_update_check';
+  static const String _keySkippedVersion = 'settings_skipped_update_version';
+  static const Duration autoCheckInterval = Duration(hours: 6);
+
+  /// Retrieves currently installed app version (e.g., '0.5.0').
+  Future<String> getCurrentVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      return info.version.isNotEmpty ? info.version : '0.5.0';
+    } catch (_) {
+      return '0.5.0';
+    }
+  }
+
+  /// Retrieves the build number if available.
+  Future<String> getCurrentBuildNumber() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      return info.buildNumber;
+    } catch (_) {
+      return '5';
+    }
+  }
+
+  Future<bool> isAutoCheckEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keyAutoCheck) ?? true;
+  }
+
+  Future<void> setAutoCheckEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyAutoCheck, enabled);
+  }
+
+  Future<DateTime?> getLastCheckTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ms = prefs.getInt(_keyLastCheck);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  Future<String?> getSkippedVersion() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keySkippedVersion);
+  }
+
+  Future<void> skipVersion(String version) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keySkippedVersion, version);
+  }
+
+  Future<void> clearSkippedVersion() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keySkippedVersion);
+  }
+
+  Future<bool> shouldRunAutoCheck() async {
+    if (!await isAutoCheckEnabled()) return false;
+    final last = await getLastCheckTime();
+    if (last == null) return true;
+    return DateTime.now().difference(last) >= autoCheckInterval;
+  }
+
+  /// Checks GitHub for the latest release.
+  ///
+  /// When [force] is true, ignores auto-check timers and skipped versions.
+  Future<AppUpdateInfo?> checkForUpdate({bool force = false}) async {
+    final current = await getCurrentVersion();
+    if (!force && !await shouldRunAutoCheck()) {
+      return null;
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_keyLastCheck, DateTime.now().millisecondsSinceEpoch);
+
+      // Attempt 1: Fetch latest release from GitHub API
+      final latestUri =
+          Uri.parse('https://api.github.com/repos/$owner/$repo/releases/latest');
+      final response = await _client.get(
+        latestUri,
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Speed-Math-Flutter-App',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return _processReleaseData(data, current, force, prefs);
+      }
+
+      // Attempt 2: If 403 (Rate Limit) or 404, fallback to checking raw pubspec on main branch
+      if (response.statusCode == 403 || response.statusCode == 404) {
+        if (kDebugMode) {
+          print('GitHub Releases API returned ${response.statusCode}, attempting fallback...');
+        }
+        final fallbackInfo = await _checkFallbackRawPubspec(current, force, prefs);
+        if (fallbackInfo != null) return fallbackInfo;
+      }
+
+      return force ? AppUpdateInfo.upToDate(current) : null;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error checking for updates: $e');
+      }
+      return force ? AppUpdateInfo.upToDate(current) : null;
+    }
+  }
+
+  AppUpdateInfo? _processReleaseData(
+    Map<String, dynamic> data,
+    String current,
+    bool force,
+    SharedPreferences prefs,
+  ) {
+    final tag = data['tag_name'] as String? ?? '';
+    final latest = tag.replaceFirst(RegExp(r'^v', caseSensitive: false), '');
+    final newer = isVersionNewer(current, latest);
+
+    if (!force && newer) {
+      final skipped = prefs.getString(_keySkippedVersion);
+      if (skipped == latest || skipped == tag) {
+        return null;
+      }
+    }
+
+    return AppUpdateInfo.fromJson(
+      json: data,
+      currentVersion: current,
+      hasUpdate: newer,
+    );
+  }
+
+  /// Fallback check by reading raw pubspec.yaml on GitHub main branch.
+  Future<AppUpdateInfo?> _checkFallbackRawPubspec(
+    String current,
+    bool force,
+    SharedPreferences prefs,
+  ) async {
+    try {
+      final rawUri = Uri.parse(
+        'https://raw.githubusercontent.com/$owner/$repo/main/pubspec.yaml',
+      );
+      final rawResp = await _client.get(rawUri).timeout(const Duration(seconds: 6));
+      if (rawResp.statusCode == 200) {
+        final match = RegExp(r'^version:\s*([0-9\.\+\-a-zA-Z]+)', multiLine: true)
+            .firstMatch(rawResp.body);
+        if (match != null) {
+          final remoteVer = match.group(1)!.split('+').first;
+          final newer = isVersionNewer(current, remoteVer);
+          if (!force && newer) {
+            final skipped = prefs.getString(_keySkippedVersion);
+            if (skipped == remoteVer) return null;
+          }
+          return AppUpdateInfo(
+            currentVersion: current,
+            latestVersion: remoteVer,
+            tagName: 'v$remoteVer',
+            releaseTitle: 'Speed Math v$remoteVer Update',
+            releaseNotes:
+                'A new version (v$remoteVer) is available on GitHub! Download the latest APK to get the newest features, drills, and accuracy improvements.',
+            releaseHtmlUrl: 'https://github.com/$owner/$repo/releases',
+            hasUpdate: newer,
+          );
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Compares two version strings (e.g. '0.4.0' vs '0.5.0' or '1.0.0+4' vs '1.0.0+5').
+  static bool isVersionNewer(String current, String latest) {
+    final a = _parseVersion(current);
+    final b = _parseVersion(latest);
+    final n = max(a.length, b.length);
+
+    for (var i = 0; i < n; i++) {
+      final x = i < a.length ? a[i] : 0;
+      final y = i < b.length ? b[i] : 0;
+      if (y > x) return true;
+      if (y < x) return false;
+    }
+    return false;
+  }
+
+  static List<int> _parseVersion(String v) {
+    var s = v.trim().replaceFirst(RegExp(r'^[vV]'), '');
+    int buildNum = 0;
+    if (s.contains('+')) {
+      final parts = s.split('+');
+      s = parts.first;
+      if (parts.length > 1) {
+        buildNum = int.tryParse(parts[1]) ?? 0;
+      }
+    }
+    if (s.contains('-')) {
+      s = s.split('-').first;
+    }
+    final numbers = s.split('.').map((x) => int.tryParse(x) ?? 0).toList();
+    if (buildNum > 0) {
+      numbers.add(buildNum);
+    }
+    return numbers;
+  }
+
+  /// Launches either the direct APK download or the GitHub release web page.
+  Future<bool> launchUpdate(AppUpdateInfo info) async {
+    final target = info.apkDownloadUrl ?? info.releaseHtmlUrl;
+    if (target.isEmpty) return false;
+    final uri = Uri.parse(target);
+    if (await canLaunchUrl(uri)) {
+      return launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+    return false;
+  }
 }

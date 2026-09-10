@@ -4,8 +4,10 @@ import 'package:lottie/lottie.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../core/constants/app_assets.dart';
+import '../../../core/services/feedback_service.dart';
 import '../../../core/services/practice_feedback_service.dart';
 import '../models/practice_models.dart';
+import '../services/practice_question_engine.dart';
 import 'practice_session_screen.dart';
 import 'practice_setup_screen.dart';
 
@@ -400,7 +402,7 @@ class _PracticeReviewScreenState extends State<PracticeReviewScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  item.prompt,
+                  formatMathPrompt(item.prompt),
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
@@ -462,6 +464,24 @@ class _PracticeReviewScreenState extends State<PracticeReviewScreen> {
                   ),
                 ),
               ],
+              const Spacer(),
+              IconButton(
+                iconSize: 18,
+                padding: EdgeInsets.zero,
+                constraints:
+                    const BoxConstraints(minWidth: 28, minHeight: 28),
+                tooltip: 'Report question error to admin',
+                icon: const Icon(Icons.flag_outlined, color: Colors.grey),
+                onPressed: () {
+                  FeedbackService.instance.showReportQuestionDialog(
+                    context,
+                    prompt: formatMathPrompt(item.prompt),
+                    correctAnswer: item.correctAnswer,
+                    userAnswer: item.userAnswer,
+                    topic: widget.config.category.name,
+                  );
+                },
+              ),
             ],
           ),
         ],

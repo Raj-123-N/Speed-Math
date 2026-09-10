@@ -36,12 +36,16 @@ PracticeQuestion generatePnC(PracticeConfig c, Random random) {
 }
 
 PracticeQuestion generateProbability(PracticeConfig c, Random random) {
-  final red = _between(1, 8, random), blue = _between(1, 8, random);
+  const cleanTotals = [2, 4, 5, 8, 10, 20];
+  final total = cleanTotals[random.nextInt(cleanTotals.length)];
+  final red = _between(1, total - 1, random);
+  final blue = total - red;
+  final prob = red / total;
   return PracticeQuestion(
     prompt: 'Bag has $red red and $blue blue. P(red) = ?',
-    answer: _format(red / (red + blue)),
-    options: _numOpts(red / (red + blue), random),
-    inputHint: 'Probability',
+    answer: _format(prob),
+    options: _numOpts(prob, random),
+    inputHint: 'Decimal (e.g. 0.25)',
   );
 }
 

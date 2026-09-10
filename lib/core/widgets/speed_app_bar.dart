@@ -36,24 +36,17 @@ class SpeedMathAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       child: Row(
         children: [
-          // Hamburger menu
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => Scaffold.of(context).openDrawer(),
-              borderRadius: BorderRadius.circular(12),
-              child: const Padding(
-                padding: EdgeInsets.all(14),
-                child: Icon(Icons.menu_rounded, color: Colors.white, size: 26),
-              ),
-            ),
+          // App Icon
+          const Padding(
+            padding: EdgeInsets.only(left: 16, right: 12),
+            child: Icon(Icons.bolt_rounded, color: Colors.white, size: 28),
           ),
 
           // Brand text
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title ?? 'Speed Math',

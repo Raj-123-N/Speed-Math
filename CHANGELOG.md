@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.0] - 2026-09-10
+
+### 🚀 Summary
+Major release introducing custom number ranges (1–100) and single table selection for Practice drills, an in-app question and content reporting system backed by Cloud Firestore and a dedicated Admin Web Portal, extensive mathematical precision fixes across practice generators, and an upgraded, resilient GitHub in-app update checker.
+
+### ✨ Added & Improved
+- **Practice Setup & Custom Ranges (1–100)**:
+  - Added strict dual input boxes ("From Value" → "To Value") and dual-thumb range sliders for Tables and Recall modules (Squares, Cubes, Roots).
+  - Dedicated Single Table mode allowing isolated practice on any table from 1 to 100 with sequential or randomized multiplier progression.
+  - Live formula preview card showing exact range boundaries, formula examples, and target question scope.
+- **Mathematical Accuracy & Generators**:
+  - Fixed quadratic series generator calculating 5th term (`start + 16`).
+  - Formatted negative roots cleanly in polynomial generator to prevent double negative notation.
+  - Aligned fraction generator options with answer formats (matching decimal options for decimal questions, and fraction options for fraction questions).
+  - Cleaned probability generator outputs to terminating mental math decimals with matching options.
+  - Standardized Unicode superscripts (`formatMathPrompt` and `toSuperscript`) for powers and exponents.
+- **In-App Reporting & Admin Portal**:
+  - Integrated `FeedbackService` with direct issue reporting from practice sessions and Learn topic details to Firebase Firestore.
+  - Full-featured Admin Web Portal for reviewing, filtering, resolving, and archiving reported questions and issues.
+- **Advanced GitHub Update Engine**:
+  - Upgraded `AppUpdateService` with unauthenticated GitHub API rate-limit resilience and fallback checks.
+  - Redesigned `UpdateDialog` with glowing glassmorphic aesthetics, version comparison badges, APK download size preview, and release highlights.
+  - Verified `_UpToDateDialog` with instant status confirmation.
+
+---
+
 ## [0.1.3] - 2026-08-28
 
 ### 🚀 Summary

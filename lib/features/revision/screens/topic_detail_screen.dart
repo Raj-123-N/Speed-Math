@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
+import '../../../core/services/feedback_service.dart';
 import '../data/revision_content_data.dart';
 import '../models/revision_models.dart';
 import '../widgets/algebra_basics_view.dart';
@@ -133,6 +134,29 @@ class _TopicDetailScreenState extends State<TopicDetailScreen>
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Report Content Error',
+            icon: Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: isDark ? 0.15 : 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.flag_outlined,
+                size: 18,
+                color: Colors.amber,
+              ),
+            ),
+            onPressed: () => FeedbackService.instance.showReportLearnDialog(
+              context,
+              topicTitle: topic.name,
+              sectionName: widget.moduleTitle.isNotEmpty ? widget.moduleTitle : 'Learn',
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Container(

@@ -8,6 +8,7 @@ import '../../app/theme/app_typography.dart';
 import '../../app/theme/theme_provider.dart';
 import '../../core/services/app_update_service.dart';
 import '../../core/services/app_utility_service.dart';
+import '../../core/services/feedback_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/practice_feedback_service.dart';
 import '../../core/widgets/update_dialog.dart';
@@ -167,6 +168,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _ActionRow(icon: Icons.share_rounded, label: 'Share this App', subtitle: 'Share Speed Math with friends', isDark: isDark, color: AppColors.primary, onTap: _share),
                   _Divider(isDark: isDark),
                   _ActionRow(icon: Icons.star_rate_rounded, label: 'Rate this App', subtitle: 'Leave a rating when store review is available', isDark: isDark, color: const Color(0xFFF59E0B), onTap: _rate),
+                  _Divider(isDark: isDark),
+                  _ActionRow(
+                    icon: Icons.feedback_outlined,
+                    label: 'Send Feedback & Report Issue',
+                    subtitle: 'Report bugs or suggestions directly to the admin',
+                    isDark: isDark,
+                    color: const Color(0xFF3B82F6),
+                    onTap: () => FeedbackService.instance.showGeneralFeedbackDialog(context),
+                  ),
                 ]),
 
                 // App Updates

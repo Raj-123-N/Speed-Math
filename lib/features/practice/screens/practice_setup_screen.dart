@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_colors.dart';
@@ -29,6 +31,16 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
   bool _shuffleSequential = false;
   int _valueStart = 1, _valueEnd = 50;
 
+  // Single table & range state
+  bool _isSingleTableMode = true;
+  int _selectedSingleTable = 2;
+  int _selectedDecadeStart = 1;
+  late final TextEditingController _singleTableController;
+  late final TextEditingController _customStartController;
+  late final TextEditingController _customEndController;
+  late final TextEditingController _recallStartController;
+  late final TextEditingController _recallEndController;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +53,26 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
         widget.category.operation == MathOperation.squareRoot) {
       _valueEnd = 50;
     }
+    _singleTableController =
+        TextEditingController(text: '$_selectedSingleTable');
+    _customStartController = TextEditingController(text: '$_tableStart');
+    _customEndController = TextEditingController(text: '$_tableEnd');
+    _recallStartController = TextEditingController(text: '$_valueStart');
+    _recallEndController = TextEditingController(text: '$_valueEnd');
+    if (_pattern == PracticePattern.tables) {
+      _tableStart = _selectedSingleTable;
+      _tableEnd = _selectedSingleTable;
+    }
+  }
+
+  @override
+  void dispose() {
+    _singleTableController.dispose();
+    _customStartController.dispose();
+    _customEndController.dispose();
+    _recallStartController.dispose();
+    _recallEndController.dispose();
+    super.dispose();
   }
 
   static PracticePattern _patternFor(MathOperation op) {
@@ -197,11 +229,12 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
     final inputStr = _input == PracticeInputMode.keyboard ? 'Keyboard' : 'MCQ';
 
     if (_isTables) {
-      final tableStr = _tableStart == _tableEnd
-          ? 'Table $_tableStart'
+      final tableStr = _isSingleTableMode || _tableStart == _tableEnd
+          ? 'Table ${_isSingleTableMode ? _selectedSingleTable : _tableStart}'
           : 'Tables $_tableStart–$_tableEnd';
-      final orderStr =
-          _tableOrder == TableOrder.sequential ? 'Sequential' : 'Random';
+      final orderStr = _tableOrder == TableOrder.sequential
+          ? (_shuffleSequential ? 'Shuffled' : 'Sequential')
+          : 'Random';
       return '$_questions Qs • $tableStr (×$_multiplier, $orderStr) • $modeStr • $inputStr';
     }
 
@@ -366,86 +399,69 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
   }
 
   Widget _tableSettings(bool dark, Color accent) {
-    const popularSingle = [
-      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 99
-    ];
-
     return _section(
       dark,
       accent,
       Icons.grid_on_rounded,
       'Table selection',
       [
-        Padding(
-          padding: const EdgeInsets.only(top: 4, bottom: 6),
-          child: Text(
-            'Popular single tables',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              color: dark ? Colors.white70 : Colors.black87,
-            ),
+        // Mode Switch: Single Table (1 to 100) vs Table Range
+        Container(
+          margin: const EdgeInsets.only(top: 4, bottom: 12),
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: dark ? AppColors.surfaceDark : const Color(0xFFE2E8F0),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _modeSegmentButton(
+                  title: '🎯 Single Table',
+                  subtitle: '1 to 100',
+                  isSelected: _isSingleTableMode,
+                  accent: accent,
+                  dark: dark,
+                  onTap: () {
+                    setState(() {
+                      _isSingleTableMode = true;
+                      _tableStart = _selectedSingleTable;
+                      _tableEnd = _selectedSingleTable;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _modeSegmentButton(
+                  title: '📊 Table Range',
+                  subtitle: 'Presets & Custom',
+                  isSelected: !_isSingleTableMode,
+                  accent: accent,
+                  dark: dark,
+                  onTap: () {
+                    setState(() {
+                      _isSingleTableMode = false;
+                      if (_tableStart == _tableEnd) {
+                        _tableStart = 1;
+                        _tableEnd = 10;
+                        _customStartController.text = '1';
+                        _customEndController.text = '10';
+                      }
+                    });
+                  },
+                ),
+              ),
+            ],
           ),
         ),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: popularSingle.map((t) {
-            final isSelected = _tableStart == t && _tableEnd == t;
-            return ChoiceChip(
-              label: Text('$t'),
-              selected: isSelected,
-              selectedColor: accent,
-              labelStyle: TextStyle(
-                fontWeight: FontWeight.w800,
-                color: isSelected
-                    ? Colors.white
-                    : (dark ? Colors.white70 : Colors.black87),
-              ),
-              onSelected: (_) => setState(() {
-                _tableStart = t;
-                _tableEnd = t;
-              }),
-            );
-          }).toList(),
-        ),
+
+        if (_isSingleTableMode)
+          _singleTableSection(dark, accent)
+        else
+          _tableRangeSection(dark, accent),
+
         const SizedBox(height: 10),
-        _choiceRow(
-          'Range presets',
-          ['1–10', '11–20', '1–20'],
-          _tableStart == 1 && _tableEnd == 10
-              ? '1–10'
-              : _tableStart == 11 && _tableEnd == 20
-                  ? '11–20'
-                  : _tableStart == 1 && _tableEnd == 20
-                      ? '1–20'
-                      : '',
-          (v) {
-            setState(() {
-              if (v == '1–10') {
-                _tableStart = 1;
-                _tableEnd = 10;
-              } else if (v == '11–20') {
-                _tableStart = 11;
-                _tableEnd = 20;
-              } else if (v == '1–20') {
-                _tableStart = 1;
-                _tableEnd = 20;
-              }
-            });
-          },
-        ),
-        _rangeRow(
-          'Custom table range',
-          _tableStart,
-          _tableEnd,
-          'Practice between any tables 1–100',
-          100,
-          (a, b) => setState(() {
-            _tableStart = a;
-            _tableEnd = b;
-          }),
-        ),
         _choiceRow(
           'Multiplier limit',
           ['Up to 10', 'Up to 20'],
@@ -465,21 +481,785 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
             _shuffleSequential,
             (v) => setState(() => _shuffleSequential = v),
           ),
-        _info(
-          _tableOrder == TableOrder.sequential
-              ? (_tableStart == _tableEnd
-                  ? 'Sequential mode walks through $_tableStart × 1 up to $_tableStart × $_multiplier without repeating.'
-                  : 'Sequential mode systematically covers tables $_tableStart to $_tableEnd up to ×$_multiplier.')
-              : 'Random mode picks random table numbers and random multipliers strictly inside your range.',
+        const SizedBox(height: 8),
+        _tableLivePreview(dark, accent),
+      ],
+    );
+  }
+
+  Widget _modeSegmentButton({
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required Color accent,
+    required bool dark,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: accent.withValues(alpha: .35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
+        ),
+        child: Column(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+                color: isSelected
+                    ? Colors.white
+                    : (dark ? Colors.white70 : Colors.black87),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                color: isSelected
+                    ? Colors.white.withValues(alpha: .85)
+                    : (dark ? Colors.white38 : Colors.black38),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _singleTableSection(bool dark, Color accent) {
+    const popularSingle = [
+      2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 99
+    ];
+
+    const decadeStarts = [1, 11, 21, 31, 41, 51, 61, 71, 81, 91];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Selected Table Hero Card
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: .08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: accent.withValues(alpha: .24)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: .18),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.calculate_rounded, color: accent, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Table $_selectedSingleTable',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                        color: dark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    Text(
+                      'Drilling $_selectedSingleTable × 1 up to $_selectedSingleTable × $_multiplier',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: dark ? Colors.white60 : Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Stepper & Direct Editable Box
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    iconSize: 22,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    icon: const Icon(Icons.remove_circle_outline_rounded),
+                    onPressed: _selectedSingleTable > 1
+                        ? () => _selectSingleTable(_selectedSingleTable - 1)
+                        : null,
+                  ),
+                  SizedBox(
+                    width: 48,
+                    child: TextField(
+                      controller: _singleTableController,
+                      textAlign: TextAlign.center,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        color: accent,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onChanged: (v) {
+                        final n = int.tryParse(v);
+                        if (n != null && n >= 1 && n <= 100) {
+                          setState(() {
+                            _selectedSingleTable = n;
+                            _tableStart = n;
+                            _tableEnd = n;
+                            _selectedDecadeStart =
+                                ((n - 1) ~/ 10) * 10 + 1;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    iconSize: 22,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    onPressed: _selectedSingleTable < 100
+                        ? () => _selectSingleTable(_selectedSingleTable + 1)
+                        : null,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Action button: Browse All 100 Tables
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              side: BorderSide(color: accent.withValues(alpha: .4)),
+            ),
+            icon: Icon(Icons.grid_view_rounded, size: 18, color: accent),
+            label: Text(
+              'Browse All 100 Tables (1–100)',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+                color: accent,
+              ),
+            ),
+            onPressed: () => _showAllTablesSheet(context, accent, dark),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Decade Selector (1–10, 11–20, ..., 91–100)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Browse by decade',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: dark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              Text(
+                '$_selectedDecadeStart–${_selectedDecadeStart + 9}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  color: accent,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: decadeStarts.map((start) {
+              final isDecadeActive = _selectedDecadeStart == start;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: ChoiceChip(
+                  label: Text('$start–${start + 9}'),
+                  selected: isDecadeActive,
+                  selectedColor: accent,
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11.5,
+                    color: isDecadeActive
+                        ? Colors.white
+                        : (dark ? Colors.white70 : Colors.black87),
+                  ),
+                  onSelected: (_) {
+                    setState(() {
+                      _selectedDecadeStart = start;
+                    });
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Individual table numbers for active decade
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: dark ? AppColors.surfaceDark : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: dark ? AppColors.borderDark : AppColors.borderLight,
+            ),
+          ),
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: List.generate(10, (idx) {
+              final t = _selectedDecadeStart + idx;
+              final isSelected = _selectedSingleTable == t;
+              return ChoiceChip(
+                label: Text('$t'),
+                selected: isSelected,
+                selectedColor: accent,
+                labelStyle: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  color: isSelected
+                      ? Colors.white
+                      : (dark ? Colors.white70 : Colors.black87),
+                ),
+                onSelected: (_) => _selectSingleTable(t),
+              );
+            }),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Popular single tables row
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            'Popular tables',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: dark ? Colors.white70 : Colors.black87,
+            ),
+          ),
+        ),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: popularSingle.map((t) {
+            final isSelected = _selectedSingleTable == t;
+            return ChoiceChip(
+              label: Text('$t'),
+              selected: isSelected,
+              selectedColor: accent,
+              labelStyle: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: isSelected
+                    ? Colors.white
+                    : (dark ? Colors.white70 : Colors.black87),
+              ),
+              onSelected: (_) => _selectSingleTable(t),
+            );
+          }).toList(),
         ),
       ],
     );
   }
 
+  Widget _tableRangeSection(bool dark, Color accent) {
+    const presets = [
+      ('1–10', 1, 10, 'Basics'),
+      ('11–20', 11, 20, 'Teens & 20s'),
+      ('1–20', 1, 20, 'Standard'),
+      ('12–19', 12, 19, 'Drill'),
+      ('21–30', 21, 30, 'Twenties'),
+      ('1–50', 1, 50, 'Marathon'),
+      ('51–100', 51, 100, 'Upper 50'),
+      ('1–100', 1, 100, 'All 100'),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Range Presets Chips
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            'Range presets',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: dark ? Colors.white70 : Colors.black87,
+            ),
+          ),
+        ),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: presets.map((p) {
+            final isSelected = _tableStart == p.$2 && _tableEnd == p.$3;
+            return ChoiceChip(
+              label: Text('${p.$1} (${p.$4})'),
+              selected: isSelected,
+              selectedColor: accent,
+              labelStyle: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                color: isSelected
+                    ? Colors.white
+                    : (dark ? Colors.white70 : Colors.black87),
+              ),
+              onSelected: (_) => _applyTableRangePreset(p.$2, p.$3),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+
+        // Custom Table Range Input Box
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: dark ? AppColors.surfaceDark : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: dark ? AppColors.borderDark : AppColors.borderLight,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Custom Table Range',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5,
+                      color: dark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: .15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${_tableEnd - _tableStart + 1} tables total',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11.5,
+                        color: accent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Enter any custom numbers 1–100 or adjust slider',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: dark ? Colors.white60 : Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Dual Input Box (Start Table -> End Table)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _customTableNumberBox(
+                    label: 'From Table',
+                    controller: _customStartController,
+                    value: _tableStart,
+                    accent: accent,
+                    dark: dark,
+                    onMinus: _tableStart > 1
+                        ? () => _applyTableRangePreset(_tableStart - 1, _tableEnd)
+                        : null,
+                    onPlus: _tableStart < _tableEnd
+                        ? () => _applyTableRangePreset(_tableStart + 1, _tableEnd)
+                        : null,
+                    onChanged: (val) {
+                      final n = int.tryParse(val);
+                      if (n != null && n >= 1 && n <= 100) {
+                        setState(() {
+                          _tableStart = n;
+                          if (_tableEnd < _tableStart) {
+                            _tableEnd = _tableStart;
+                            _customEndController.text = '$_tableEnd';
+                          }
+                        });
+                      }
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: accent,
+                      size: 20,
+                    ),
+                  ),
+                  _customTableNumberBox(
+                    label: 'To Table',
+                    controller: _customEndController,
+                    value: _tableEnd,
+                    accent: accent,
+                    dark: dark,
+                    onMinus: _tableEnd > _tableStart
+                        ? () => _applyTableRangePreset(_tableStart, _tableEnd - 1)
+                        : null,
+                    onPlus: _tableEnd < 100
+                        ? () => _applyTableRangePreset(_tableStart, _tableEnd + 1)
+                        : null,
+                    onChanged: (val) {
+                      final n = int.tryParse(val);
+                      if (n != null && n >= 1 && n <= 100) {
+                        setState(() {
+                          _tableEnd = n;
+                          if (_tableStart > _tableEnd) {
+                            _tableStart = _tableEnd;
+                            _customStartController.text = '$_tableStart';
+                          }
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Dual thumb RangeSlider (1 to 100)
+              RangeSlider(
+                values: RangeValues(
+                  _tableStart.clamp(1, 100).toDouble(),
+                  _tableEnd.clamp(1, 100).toDouble(),
+                ),
+                min: 1,
+                max: 100,
+                divisions: 99,
+                activeColor: accent,
+                inactiveColor: accent.withValues(alpha: .2),
+                labels: RangeLabels('$_tableStart', '$_tableEnd'),
+                onChanged: (values) {
+                  setState(() {
+                    _tableStart = values.start.round();
+                    _tableEnd = values.end.round();
+                    _customStartController.text = '$_tableStart';
+                    _customEndController.text = '$_tableEnd';
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _customTableNumberBox({
+    required String label,
+    required TextEditingController controller,
+    required int value,
+    required Color accent,
+    required bool dark,
+    required VoidCallback? onMinus,
+    required VoidCallback? onPlus,
+    required ValueChanged<String> onChanged,
+  }) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: dark ? Colors.white60 : Colors.black54,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              iconSize: 20,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              icon: const Icon(Icons.remove_circle_outline_rounded),
+              onPressed: onMinus,
+            ),
+            SizedBox(
+              width: 50,
+              child: TextField(
+                controller: controller,
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                  color: accent,
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onChanged: onChanged,
+              ),
+            ),
+            IconButton(
+              iconSize: 20,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              icon: const Icon(Icons.add_circle_outline_rounded),
+              onPressed: onPlus,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _tableLivePreview(bool dark, Color accent) {
+    final isSingle = _isSingleTableMode || _tableStart == _tableEnd;
+    final tableNum = _isSingleTableMode ? _selectedSingleTable : _tableStart;
+    final totalTables = isSingle ? 1 : (_tableEnd - _tableStart + 1);
+    final totalEquations = totalTables * _multiplier;
+    final orderDesc = _tableOrder == TableOrder.sequential
+        ? (_shuffleSequential
+            ? 'Systematic (Shuffled order)'
+            : 'Sequential (1 to $_multiplier)')
+        : 'Random agility';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: .2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome_rounded, color: accent, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                isSingle
+                    ? 'Table $tableNum Live Formula'
+                    : 'Tables $_tableStart–$_tableEnd Formula ($totalTables tables)',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12.5,
+                  color: accent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isSingle
+                ? '$tableNum × 1 = ${tableNum * 1}  •  $tableNum × 2 = ${tableNum * 2}  ...  $tableNum × $_multiplier = ${tableNum * _multiplier}'
+                : '$_tableStart × 1 = ${_tableStart * 1}  ...  $_tableEnd × $_multiplier = ${_tableEnd * _multiplier}',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: dark ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            'Coverage: $totalEquations unique equations • Order: $orderDesc',
+            style: TextStyle(
+              fontSize: 11,
+              color: dark ? Colors.white60 : Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _selectSingleTable(int t) {
+    final clamped = t.clamp(1, 100);
+    setState(() {
+      _selectedSingleTable = clamped;
+      _tableStart = clamped;
+      _tableEnd = clamped;
+      _singleTableController.text = '$clamped';
+      _selectedDecadeStart = ((clamped - 1) ~/ 10) * 10 + 1;
+    });
+  }
+
+  void _applyTableRangePreset(int start, int end) {
+    setState(() {
+      _tableStart = start.clamp(1, 100);
+      _tableEnd = end.clamp(1, 100);
+      _customStartController.text = '$_tableStart';
+      _customEndController.text = '$_tableEnd';
+    });
+  }
+
+  void _showAllTablesSheet(BuildContext context, Color accent, bool dark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: dark ? AppColors.surfaceDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.75,
+          minChildSize: 0.4,
+          maxChildSize: 0.92,
+          builder: (_, scrollController) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: .4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Select Any Table (1–100)',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                          color: dark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: GridView.builder(
+                      controller: scrollController,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 5,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        childAspectRatio: 1.35,
+                      ),
+                      itemCount: 100,
+                      itemBuilder: (_, index) {
+                        final t = index + 1;
+                        final isSelected = _selectedSingleTable == t;
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            _selectSingleTable(t);
+                            Navigator.pop(ctx);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? accent
+                                  : (dark
+                                      ? AppColors.cardDark
+                                      : const Color(0xFFF1F5F9)),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? accent
+                                    : (dark
+                                        ? AppColors.borderDark
+                                        : AppColors.borderLight),
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '$t',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14.5,
+                                color: isSelected
+                                    ? Colors.white
+                                    : (dark ? Colors.white : Colors.black87),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _recallSettings(bool dark, Color accent) {
-    final isSquare = widget.category.operation == MathOperation.square ||
-        widget.category.operation == MathOperation.squareRoot;
-    final maxPreset = isSquare ? 100 : 30;
+    final isCube = widget.category.operation == MathOperation.cube ||
+        widget.category.operation == MathOperation.cubeRoot;
+    final presets = isCube
+        ? ['1–10', '1–15', '1–20', '1–30', '1–50', '1–100']
+        : ['1–10', '1–20', '1–30', '1–50', '1–100'];
 
     return _section(
       dark,
@@ -487,33 +1267,167 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
       Icons.all_inclusive_rounded,
       'Recall range',
       [
+        // Range presets ChoiceRow
         _choiceRow(
           'Range presets',
-          isSquare
-              ? ['1–10', '1–20', '1–30', '1–50', '1–100']
-              : ['1–10', '1–15', '1–20', '1–30'],
-          '$_valueStart–$_valueEnd',
+          presets,
+          presets.contains('$_valueStart–$_valueEnd')
+              ? '$_valueStart–$_valueEnd'
+              : '',
           (v) {
             final parts = v.split('–');
             if (parts.length == 2) {
-              setState(() {
-                _valueStart = int.tryParse(parts[0]) ?? 1;
-                _valueEnd = int.tryParse(parts[1]) ?? 20;
-              });
+              final a = int.tryParse(parts[0]) ?? 1;
+              final b = int.tryParse(parts[1]) ?? 20;
+              _applyRecallPreset(a, b);
             }
           },
         ),
-        _rangeRow(
-          'Target values',
-          _valueStart,
-          _valueEnd,
-          'Questions strictly drawn from this range',
-          maxPreset,
-          (a, b) => setState(() {
-            _valueStart = a;
-            _valueEnd = b;
-          }),
+        const SizedBox(height: 10),
+
+        // Custom Target Range Card
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: dark ? AppColors.surfaceDark : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: dark ? AppColors.borderDark : AppColors.borderLight,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Custom Target Range',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5,
+                      color: dark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: .15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${_valueEnd - _valueStart + 1} values total',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11.5,
+                        color: accent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Enter any custom numbers 1–100 or adjust slider',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: dark ? Colors.white60 : Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Dual Input Box (Start Value -> End Value)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _customTableNumberBox(
+                    label: 'From Value',
+                    controller: _recallStartController,
+                    value: _valueStart,
+                    accent: accent,
+                    dark: dark,
+                    onMinus: _valueStart > 1
+                        ? () => _applyRecallPreset(_valueStart - 1, _valueEnd)
+                        : null,
+                    onPlus: _valueStart < _valueEnd
+                        ? () => _applyRecallPreset(_valueStart + 1, _valueEnd)
+                        : null,
+                    onChanged: (val) {
+                      final n = int.tryParse(val);
+                      if (n != null && n >= 1 && n <= 100) {
+                        setState(() {
+                          _valueStart = n;
+                          if (_valueEnd < _valueStart) {
+                            _valueEnd = _valueStart;
+                            _recallEndController.text = '$_valueEnd';
+                          }
+                        });
+                      }
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: accent,
+                      size: 20,
+                    ),
+                  ),
+                  _customTableNumberBox(
+                    label: 'To Value',
+                    controller: _recallEndController,
+                    value: _valueEnd,
+                    accent: accent,
+                    dark: dark,
+                    onMinus: _valueEnd > _valueStart
+                        ? () => _applyRecallPreset(_valueStart, _valueEnd - 1)
+                        : null,
+                    onPlus: _valueEnd < 100
+                        ? () => _applyRecallPreset(_valueStart, _valueEnd + 1)
+                        : null,
+                    onChanged: (val) {
+                      final n = int.tryParse(val);
+                      if (n != null && n >= 1 && n <= 100) {
+                        setState(() {
+                          _valueEnd = n;
+                          if (_valueStart > _valueEnd) {
+                            _valueStart = _valueEnd;
+                            _recallStartController.text = '$_valueStart';
+                          }
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Dual-thumb RangeSlider (1 to 100)
+              RangeSlider(
+                values: RangeValues(
+                  _valueStart.clamp(1, 100).toDouble(),
+                  _valueEnd.clamp(1, 100).toDouble(),
+                ),
+                min: 1,
+                max: 100,
+                divisions: 99,
+                activeColor: accent,
+                inactiveColor: accent.withValues(alpha: .2),
+                labels: RangeLabels('$_valueStart', '$_valueEnd'),
+                onChanged: (values) {
+                  setState(() {
+                    _valueStart = values.start.round();
+                    _valueEnd = values.end.round();
+                    _recallStartController.text = '$_valueStart';
+                    _recallEndController.text = '$_valueEnd';
+                  });
+                },
+              ),
+            ],
+          ),
         ),
+
         if (_valueStart == _valueEnd)
           Container(
             margin: const EdgeInsets.only(top: 8),
@@ -539,10 +1453,85 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
               ],
             ),
           ),
-        _info(
-          'Only numbers in [$_valueStart, $_valueEnd] will be tested. No numbers lower or higher will appear.',
-        ),
+        const SizedBox(height: 8),
+        _recallLivePreview(dark, accent),
       ],
+    );
+  }
+
+  void _applyRecallPreset(int start, int end) {
+    setState(() {
+      _valueStart = start.clamp(1, 100);
+      _valueEnd = end.clamp(1, 100);
+      _recallStartController.text = '$_valueStart';
+      _recallEndController.text = '$_valueEnd';
+    });
+  }
+
+  Widget _recallLivePreview(bool dark, Color accent) {
+    final op = widget.category.operation;
+    final total = _valueEnd - _valueStart + 1;
+    String previewText = '';
+
+    if (op == MathOperation.square) {
+      previewText =
+          '$_valueStart² = ${_valueStart * _valueStart}  ...  $_valueEnd² = ${_valueEnd * _valueEnd}';
+    } else if (op == MathOperation.cube) {
+      previewText =
+          '$_valueStart³ = ${_valueStart * _valueStart * _valueStart}  ...  $_valueEnd³ = ${_valueEnd * _valueEnd * _valueEnd}';
+    } else if (op == MathOperation.squareRoot) {
+      previewText =
+          '√${_valueStart * _valueStart} = $_valueStart  ...  √${_valueEnd * _valueEnd} = $_valueEnd';
+    } else if (op == MathOperation.cubeRoot) {
+      previewText =
+          '∛${_valueStart * _valueStart * _valueStart} = $_valueStart  ...  ∛${_valueEnd * _valueEnd * _valueEnd} = $_valueEnd';
+    } else {
+      previewText = 'Values range: [$_valueStart, $_valueEnd]';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: .2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome_rounded, color: accent, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                '${widget.category.name} [$_valueStart–$_valueEnd] Formula',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12.5,
+                  color: accent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            previewText,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: dark ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            'Target scope: $total unique numbers • Strict limits enforced',
+            style: TextStyle(
+              fontSize: 11,
+              color: dark ? Colors.white60 : Colors.black54,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -858,6 +1847,25 @@ class _PracticeSetupScreenState extends State<PracticeSetupScreen> {
       );
 
   void _start() {
+    if (_isTables) {
+      if (_isSingleTableMode) {
+        _tableStart = _selectedSingleTable;
+        _tableEnd = _selectedSingleTable;
+      } else {
+        final a = min(_tableStart, _tableEnd).clamp(1, 100);
+        final b = max(_tableStart, _tableEnd).clamp(1, 100);
+        _tableStart = a;
+        _tableEnd = b;
+      }
+    }
+
+    if (_isRecall) {
+      final a = min(_valueStart, _valueEnd).clamp(1, 100);
+      final b = max(_valueStart, _valueEnd).clamp(1, 100);
+      _valueStart = a;
+      _valueEnd = b;
+    }
+
     final config = PracticeConfig(
       category: widget.category,
       pattern: _pattern,

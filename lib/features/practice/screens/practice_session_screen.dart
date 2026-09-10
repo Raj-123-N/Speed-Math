@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../core/models/quiz_category.dart';
+import '../../../core/services/feedback_service.dart';
 import '../../../core/services/practice_feedback_service.dart';
 import '../models/practice_models.dart';
 import '../services/practice_progress_service.dart';
@@ -44,6 +45,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen>
   bool _finishing = false;
   bool _animationsEnabled = true;
   bool? _lastCorrect;
+  bool? _overrideNumericInput;
   final List<PracticeAnswerRecord> _answers = [];
 
   @override
@@ -160,6 +162,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen>
       _answer.clear();
       _locked = false;
       _lastCorrect = null;
+      _overrideNumericInput = null;
     });
     _requestKeyboard();
   }
@@ -202,10 +205,16 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen>
     );
   }
 
-  bool get _numericInput {
+  bool get _isNumeric {
+    if (_overrideNumericInput != null) {
+      return _overrideNumericInput!;
+    }
+    if (RegExp(r'[a-zA-Z]').hasMatch(_question.answer)) {
+      return false;
+    }
     switch (widget.config.category.operation) {
       case MathOperation.trigonometry:
-      case MathOperation.series:
+      case MathOperation.polynomials:
       case MathOperation.linearEquation:
       case MathOperation.quadraticEquation:
       case MathOperation.cubicEquation:
@@ -229,7 +238,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen>
           ? 'Table ${widget.config.tableStart}'
           : 'Tables ${widget.config.tableStart}–${widget.config.tableEnd}';
       final order = widget.config.tableOrder == TableOrder.sequential
-          ? 'Sequential'
+          ? (widget.config.shuffleSequential ? 'Shuffled' : 'Sequential')
           : 'Random';
       return '$range • $order';
     }
@@ -284,6 +293,19 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen>
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Report Question',
+            icon: const Icon(Icons.flag_outlined),
+            onPressed: () {
+              FeedbackService.instance.showReportQuestionDialog(
+                context,
+                prompt: formatMathPrompt(_question.prompt),
+                correctAnswer: _question.answer,
+                userAnswer: _answer.text.trim(),
+                topic: widget.config.category.name,
+              );
+            },
+          ),
           IconButton(
             tooltip: 'End Practice',
             onPressed: _finish,
@@ -390,7 +412,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen>
                       ),
                       child: Center(
                         child: Text(
-                          _question.prompt,
+                          formatMathPrompt(_question.prompt),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 30,
@@ -497,7 +519,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen>
             controller: _answer,
             focusNode: _focus,
             enabled: !_locked,
-            keyboardType: _numericInput
+            keyboardType: _isNumeric
                 ? const TextInputType.numberWithOptions(
                     decimal: true,
                     signed: true,
@@ -514,10 +536,45 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen>
             },
             decoration: InputDecoration(
               labelText: _question.inputHint,
-              hintText: _numericInput
-                  ? 'Type the answer'
-                  : 'Letters and symbols supported',
-              prefixIcon: Icon(Icons.keyboard_alt_outlined, color: accent),
+              hintText: _isNumeric
+                  ? 'Number keyboard (tap 123 to switch)'
+                  : 'QWERTY keyboard (letters & symbols)',
+              prefixIcon: Tooltip(
+                message: _isNumeric
+                    ? 'Switch to QWERTY (ABC)'
+                    : 'Switch to Numbers (123)',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: _locked
+                      ? null
+                      : () {
+                          setState(() {
+                            _overrideNumericInput = !_isNumeric;
+                          });
+                        },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: .14),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: accent.withValues(alpha: .3)),
+                      ),
+                      child: Text(
+                        _isNumeric ? '123' : 'ABC',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: accent,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               suffixIcon: IconButton(
                 tooltip: 'Submit answer',
                 onPressed: _locked ? null : () => _submit(_answer.text),
@@ -527,8 +584,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen>
               fillColor: dark ? AppColors.cardDark : Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide:
-                    BorderSide(color: accent.withValues(alpha: .3)),
+                borderSide: BorderSide(color: accent.withValues(alpha: .3)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -539,7 +595,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen>
           const SizedBox(height: 10),
           Text(
             widget.config.autoSubmit
-                ? 'Auto-submit on exact answer • Enter also works'
+                ? 'Auto-submit on exact answer • Tap 123/ABC to toggle keyboard'
                 : 'Press Enter or tap the bolt to submit',
             style: TextStyle(
               fontSize: 12,

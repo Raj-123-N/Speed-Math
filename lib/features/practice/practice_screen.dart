@@ -19,11 +19,14 @@ class _PracticeScreenState extends State<PracticeScreen>
     with SingleTickerProviderStateMixin {
   int _streak = 0;
   int _selectedTab = 0;
-  late AnimationController _tabController;
-  late Animation<double> _fadeAnim;
+  late final PageController _pageController;
 
   static const _tabs = ['Quick Recall', 'Basics', 'Miscellaneous'];
-  static const _tabColors = [Color(0xFFF97316), Color(0xFF22C55E), Color(0xFF8B5CF6)];
+  static const _tabColors = [
+    Color(0xFFF97316),
+    Color(0xFF22C55E),
+    Color(0xFF8B5CF6)
+  ];
   static const _tabIcons = [
     Icons.bolt_rounded,
     Icons.foundation_rounded,
@@ -33,9 +36,7 @@ class _PracticeScreenState extends State<PracticeScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = AnimationController(vsync: this, duration: const Duration(milliseconds: 220));
-    _fadeAnim = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _tabController, curve: Curves.easeOut));
-    _tabController.forward();
+    _pageController = PageController(initialPage: _selectedTab);
     _loadStreak();
   }
 
@@ -54,13 +55,17 @@ class _PracticeScreenState extends State<PracticeScreen>
 
   void _switchTab(int i) {
     if (i == _selectedTab) return;
-    _tabController.forward(from: 0);
+    _pageController.animateToPage(
+      i,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
     setState(() => _selectedTab = i);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -68,13 +73,6 @@ class _PracticeScreenState extends State<PracticeScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final background = isDark ? AppColors.backgroundDark : const Color(0xFFF0F2F7);
-    final sectionColor = _tabColors[_selectedTab];
-
-    final categories = [
-      QuizCategory.quickRecall,
-      QuizCategory.basics,
-      QuizCategory.miscellaneous,
-    ][_selectedTab];
 
     return Scaffold(
       backgroundColor: background,
@@ -110,16 +108,35 @@ class _PracticeScreenState extends State<PracticeScreen>
             ),
           ),
 
-          // ── Category Grid ──────────────────────────────────────────────
+          // ── Category Grid with Horizontal Swipe PageView ───────────────
           Expanded(
-            child: FadeTransition(
-              opacity: _fadeAnim,
-              child: _CategoryGrid(
-                categories: categories,
-                isDark: isDark,
-                title: _tabs[_selectedTab],
-                sectionColor: sectionColor,
-              ),
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: (i) {
+                if (mounted && i != _selectedTab) {
+                  setState(() => _selectedTab = i);
+                }
+              },
+              children: [
+                _CategoryGrid(
+                  categories: QuizCategory.quickRecall,
+                  isDark: isDark,
+                  title: _tabs[0],
+                  sectionColor: _tabColors[0],
+                ),
+                _CategoryGrid(
+                  categories: QuizCategory.basics,
+                  isDark: isDark,
+                  title: _tabs[1],
+                  sectionColor: _tabColors[1],
+                ),
+                _CategoryGrid(
+                  categories: QuizCategory.miscellaneous,
+                  isDark: isDark,
+                  title: _tabs[2],
+                  sectionColor: _tabColors[2],
+                ),
+              ],
             ),
           ),
         ],
