@@ -5,6 +5,7 @@ import '../revision/revision_screen.dart';
 import '../practice/practice_screen.dart';
 import '../settings/settings_screen.dart';
 import '../../app/theme/app_colors.dart';
+import '../../core/models/app_update_info.dart';
 import '../../core/services/app_update_service.dart';
 import '../../core/widgets/update_dialog.dart';
 
@@ -43,12 +44,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         timer = Timer(const Duration(milliseconds: 1500), _check));
   }
 
+  AppUpdateInfo? _availableUpdate;
+  bool _bannerDismissed = false;
+
   Future<void> _check() async {
     if (!mounted) return;
     try {
       final s = AppUpdateService();
       final i = await s.checkForUpdate(force: false);
-      if (mounted && i != null && i.hasUpdate) UpdateDialog.show(context, info: i, updateService: s);
+      if (mounted && i != null && i.hasUpdate) {
+        setState(() => _availableUpdate = i);
+        UpdateDialog.show(context, info: i, updateService: s);
+      }
     } catch (_) {}
   }
 
@@ -72,9 +79,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
+    final top = MediaQuery.of(context).padding.top;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(index: index, children: pages),
+      body: Stack(
+        children: [
+          IndexedStack(index: index, children: pages),
+          if (_availableUpdate != null && !_bannerDismissed)
+            Positioned(
+              top: top + 10,
+              left: 14,
+              right: 14,
+              child: _buildUpdateBanner(context, isDark),
+            ),
+        ],
+      ),
       bottomNavigationBar: SizedBox(
         height: 70 + 10 + bottom,
         child: Padding(
@@ -95,6 +116,98 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildUpdateBanner(BuildContext context, bool isDark) {
+    final info = _availableUpdate!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E2130) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.gradOrangeStart, AppColors.gradOrangeEnd],
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 16),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => UpdateDialog.show(context, info: info, updateService: AppUpdateService()),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Update Available: v${info.latestVersion}',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                        ),
+                      ),
+                      if (info.formattedSize.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '(${info.formattedSize})',
+                          style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.black54),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    'Tap to view what is new and download',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => UpdateDialog.show(context, info: info, updateService: AppUpdateService()),
+            child: const Text('Update', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
+          ),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: () => setState(() => _bannerDismissed = true),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(Icons.close_rounded, size: 16, color: isDark ? Colors.white54 : Colors.black45),
+            ),
+          ),
+        ],
       ),
     );
   }

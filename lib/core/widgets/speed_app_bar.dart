@@ -73,21 +73,24 @@ class SpeedMathAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
 
-          // Streak badge
-          _StreakBadge(),
-
-          // Notification bell
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {},
-              borderRadius: BorderRadius.circular(12),
-              child: const Padding(
-                padding: EdgeInsets.all(14),
-                child: Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+          // Actions or default streak & notification bell
+          if (actions != null && actions!.isNotEmpty)
+            ...actions!
+          else ...[
+            _StreakBadge(),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {},
+                borderRadius: BorderRadius.circular(12),
+                child: const Padding(
+                  padding: EdgeInsets.all(14),
+                  child: Icon(Icons.notifications_none_rounded,
+                      color: Colors.white, size: 24),
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

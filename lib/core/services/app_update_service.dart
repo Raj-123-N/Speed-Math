@@ -118,14 +118,69 @@ class AppUpdateService {
         return _processReleaseData(data, current, force, prefs);
       }
 
-      // Attempt 2: If 403 (Rate Limit) or 404, fallback to checking raw pubspec on main branch
-      if (response.statusCode == 403 || response.statusCode == 404) {
-        if (kDebugMode) {
-          print('GitHub Releases API returned ${response.statusCode}, attempting fallback...');
-        }
-        final fallbackInfo = await _checkFallbackRawPubspec(current, force, prefs);
-        if (fallbackInfo != null) return fallbackInfo;
+      // Attempt 2: If latest release not found (404), check releases list
+      if (response.statusCode == 404) {
+        try {
+          final listUri =
+              Uri.parse('https://api.github.com/repos/$owner/$repo/releases');
+          final listResp = await _client.get(listUri, headers: {
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'Speed-Math-Flutter-App',
+          }).timeout(const Duration(seconds: 8));
+          if (listResp.statusCode == 200) {
+            final list = jsonDecode(listResp.body) as List<dynamic>;
+            if (list.isNotEmpty) {
+              return _processReleaseData(
+                list.first as Map<String, dynamic>,
+                current,
+                force,
+                prefs,
+              );
+            }
+          }
+        } catch (_) {}
       }
+
+      // Attempt 3: Check remote git tags
+      try {
+        final tagsUri =
+            Uri.parse('https://api.github.com/repos/$owner/$repo/tags');
+        final tagsResp = await _client.get(tagsUri, headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Speed-Math-Flutter-App',
+        }).timeout(const Duration(seconds: 8));
+        if (tagsResp.statusCode == 200) {
+          final tagList = jsonDecode(tagsResp.body) as List<dynamic>;
+          if (tagList.isNotEmpty) {
+            final firstTag =
+                (tagList.first as Map<String, dynamic>)['name'] as String? ?? '';
+            final cleanLatest =
+                firstTag.replaceFirst(RegExp(r'^v', caseSensitive: false), '');
+            final newer = isVersionNewer(current, cleanLatest);
+            if (newer) {
+              final skipped = prefs.getString(_keySkippedVersion);
+              if (!force && (skipped == cleanLatest || skipped == firstTag)) {
+                return null;
+              }
+              return AppUpdateInfo(
+                currentVersion: current,
+                latestVersion: cleanLatest,
+                tagName: firstTag,
+                releaseTitle: 'Speed Math $firstTag',
+                releaseNotes:
+                    'A new release ($firstTag) is available on GitHub with updated mental math drills and performance improvements.',
+                releaseHtmlUrl:
+                    'https://github.com/$owner/$repo/releases/tag/$firstTag',
+                hasUpdate: true,
+              );
+            }
+          }
+        }
+      } catch (_) {}
+
+      // Attempt 4: If 403 (Rate Limit) or no releases/tags, fallback to checking raw pubspec on main branch
+      final fallbackInfo = await _checkFallbackRawPubspec(current, force, prefs);
+      if (fallbackInfo != null) return fallbackInfo;
 
       return force ? AppUpdateInfo.upToDate(current) : null;
     } catch (e) {
